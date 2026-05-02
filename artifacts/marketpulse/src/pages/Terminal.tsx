@@ -67,6 +67,12 @@ export default function Terminal() {
   const [selectedCountry, setSelectedCountry] = useState<number | null>(null);
   const [activeFilter, setActiveFilter] = useState('all');
 
+  // ── Live AI analysis cache ─────────────────────────────────────────────────
+  const [analysisCache, setAnalysisCache] = useState<Record<string, {
+    sig: string; conf: number; target: number; reasoning: string; loaded: boolean;
+  }>>({});
+  const [analysisLoading, setAnalysisLoading] = useState(false);
+
   // ── Derived ────────────────────────────────────────────────────────────────
   const market = MARKETS[activeMarket];
   const stocks = stocksByMarket[activeMarket];
@@ -197,12 +203,53 @@ export default function Terminal() {
     }));
   }, [activeMarket]);
 
+  // ── Fetch live AI analysis whenever active stock changes ───────────────────
+  const activeYahoo = watchlistSymbols[activeMarket]?.[activeStock?.sym ?? ''];
+  useEffect(() => {
+    if (!activeYahoo) return;
+    if (analysisCache[activeYahoo]?.loaded) return;
+    let cancelled = false;
+    setAnalysisLoading(true);
+    fetch(`/api/stock/${encodeURIComponent(activeYahoo)}/analysis`)
+      .then(r => r.json())
+      .then(data => {
+        if (cancelled) return;
+        const sigMap: Record<string, string> = { BULLISH: 'BULL', BEARISH: 'BEAR', NEUTRAL: 'NEUT' };
+        setAnalysisCache(prev => ({
+          ...prev,
+          [activeYahoo]: {
+            sig: sigMap[data.signal] ?? 'NEUT',
+            conf: typeof data.confidence === 'number' ? data.confidence : 50,
+            target: typeof data.targetPrice === 'number' ? data.targetPrice : 0,
+            reasoning: typeof data.reasoning === 'string' ? data.reasoning : '',
+            loaded: true,
+          },
+        }));
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setAnalysisCache(prev => ({
+            ...prev,
+            [activeYahoo]: { sig: 'NEUT', conf: 50, target: 0, reasoning: '', loaded: true },
+          }));
+        }
+      })
+      .finally(() => { if (!cancelled) setAnalysisLoading(false); });
+    return () => { cancelled = true; };
+  }, [activeYahoo]);
+
   // ── Derived display values ─────────────────────────────────────────────────
+  const liveAnalysis = activeYahoo ? analysisCache[activeYahoo] : null;
+  const displaySig    = liveAnalysis?.sig ?? activeStock.sig;
+  const displayConf   = liveAnalysis?.conf ?? activeStock.conf;
+  const displayTarget = liveAnalysis?.target && liveAnalysis.target > 0 ? liveAnalysis.target : activeStock.target;
+  const displayReasoning = liveAnalysis?.reasoning || market.aiExplains[activeStock.sym] || '';
+
   const country = selectedCountry ? COUNTRY_DATA[selectedCountry] : null;
   const countryCol = country ? getSignalColor(country.sig) : 'var(--bull)';
-  const col = getSignalColor(activeStock.sig);
-  const upside = activeStock.target > 0
-    ? ((activeStock.target - activeStock.price) / activeStock.price * 100).toFixed(1)
+  const col = getSignalColor(displaySig);
+  const upside = displayTarget > 0 && activeStock.price > 0
+    ? ((displayTarget - activeStock.price) / activeStock.price * 100).toFixed(1)
     : '—';
 
   // Live index rows
@@ -378,26 +425,42 @@ export default function Terminal() {
           <div className="ai-panel-row">
             <div className="signal-card">
               <div className="signal-label">AI Signal</div>
-              <div className="signal-val" style={{ color: col }}>{getSignalLabel(activeStock.sig)}</div>
+              {analysisLoading && !liveAnalysis ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, margin: '6px 0' }}>
+                  <div className="sp-spinner" style={{ width: 10, height: 10, borderWidth: 1.5 }} />
+                  <span style={{ fontSize: 9, color: 'var(--muted)' }}>Analyzing...</span>
+                </div>
+              ) : (
+                <div className="signal-val" style={{ color: col }}>{getSignalLabel(displaySig)}</div>
+              )}
               <div className="conf-bar-wrap">
-                <div className="conf-bar" style={{ width: `${activeStock.conf}%`, background: col }} />
+                <div className="conf-bar" style={{ width: `${displayConf}%`, background: col }} />
               </div>
-              <div style={{ fontSize: 9, color: 'var(--muted)', marginTop: 3 }}>Confidence: {activeStock.conf}%</div>
+              <div style={{ fontSize: 9, color: 'var(--muted)', marginTop: 3 }}>Confidence: {displayConf}%</div>
             </div>
             <div className="signal-card">
               <div className="signal-label">Target Price</div>
-              <div className="signal-val" style={{ color: col }}>
-                {activeStock.target > 0 ? `${market.currency}${activeStock.target.toLocaleString('en-IN')}` : '—'}
-              </div>
+              {analysisLoading && !liveAnalysis ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, margin: '6px 0' }}>
+                  <div className="sp-spinner" style={{ width: 10, height: 10, borderWidth: 1.5 }} />
+                  <span style={{ fontSize: 9, color: 'var(--muted)' }}>Fetching...</span>
+                </div>
+              ) : (
+                <div className="signal-val" style={{ color: col }}>
+                  {displayTarget > 0 ? `${market.currency}${displayTarget.toLocaleString('en-IN')}` : '—'}
+                </div>
+              )}
               <div style={{ fontSize: 9, color: 'var(--muted)', marginTop: 3 }}>
-                {upside !== '—' ? `${Number(upside) > 0 ? '+' : ''}${upside}% · ${activeStock.days}-day horizon` : 'Awaiting data'}
+                {upside !== '—' ? `${Number(upside) > 0 ? '+' : ''}${upside}% · 7-day horizon` : 'Awaiting data'}
               </div>
             </div>
           </div>
 
           <div className="ai-explain">
             <strong>AI Reasoning Engine — {activeStock.sym.split('.')[0]} · {market.flag} {market.name}</strong>
-            {market.aiExplains[activeStock.sym] || 'Analyzing market signals, news sentiment, and technical indicators for this stock...'}
+            {analysisLoading && !liveAnalysis
+              ? 'Analyzing real-time news, analyst consensus and technical indicators...'
+              : displayReasoning || 'Analyzing market signals, news sentiment, and technical indicators for this stock...'}
           </div>
 
           {/* Map Section */}
