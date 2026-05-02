@@ -11,6 +11,25 @@ const MARKET_SYMBOLS: Record<string, string[]> = {
   JP: ["^N225", "7203.T", "6758.T", "9984.T", "6861.T"],
 };
 
+const US_INDICES = new Set(["^GSPC", "^DJI", "^IXIC", "^RUT", "^VIX", "^NDX", "^OEX", "^NYA", "^W5000"]);
+const CN_ADRS = new Set(["BABA", "JD", "PDD", "BIDU", "NIO", "XPEV", "LI", "TME", "NTES", "IQ"]);
+
+function tickerMatchesMarket(ticker: string, market: string): boolean {
+  switch (market) {
+    case "IN":
+      return ticker.endsWith(".NS") || ticker.endsWith(".BO") || ticker === "^NSEI" || ticker === "^BSESN";
+    case "US":
+      return US_INDICES.has(ticker) || (!ticker.includes(".") && !ticker.startsWith("^"));
+    case "CN":
+      return ticker.endsWith(".HK") || ticker.endsWith(".SS") || ticker.endsWith(".SZ")
+        || CN_ADRS.has(ticker) || ticker === "^HSI" || ticker === "^HSCE";
+    case "JP":
+      return ticker.endsWith(".T") || ticker === "^N225" || ticker === "^TOPX";
+    default:
+      return true;
+  }
+}
+
 const ALL_SYMBOLS = [...new Set(Object.values(MARKET_SYMBOLS).flat())];
 
 function parsePublishTime(t: unknown): string | null {
@@ -105,8 +124,18 @@ router.get("/news", async (req, res) => {
       }
     }
 
+    // For a specific market, keep only articles whose relatedTickers include
+    // at least one ticker from that market. Articles with no tickers are dropped
+    // for specific markets since they tend to be generic global stories.
+    const marketArticles = market === "ALL"
+      ? articles
+      : articles.filter(a => {
+          const tickers = (a as { relatedTickers: string[] }).relatedTickers;
+          return tickers.length > 0 && tickers.some(t => tickerMatchesMarket(t, market));
+        });
+
     // Sort by publishedAt desc (nulls last)
-    articles.sort((a: object, b: object) => {
+    marketArticles.sort((a: object, b: object) => {
       const ta = (a as { publishedAt: string | null }).publishedAt;
       const tb = (b as { publishedAt: string | null }).publishedAt;
       if (!ta && !tb) return 0;
@@ -116,9 +145,9 @@ router.get("/news", async (req, res) => {
     });
 
     res.json({
-      articles: articles.slice(0, limit),
+      articles: marketArticles.slice(0, limit),
       market,
-      count: articles.length,
+      count: marketArticles.length,
       refreshedAt: new Date().toISOString(),
     });
   } catch (err) {
