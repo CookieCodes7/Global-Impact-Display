@@ -5,6 +5,7 @@ import detailRouter from "./detail";
 import historyRouter from "./history";
 import analysisRouter from "./analysis";
 import newsRouter from "./news";
+import imgproxyRouter from "./imgproxy";
 
 const router: IRouter = Router();
 
@@ -14,5 +15,6 @@ router.use(detailRouter);
 router.use(historyRouter);
 router.use(analysisRouter);
 router.use(newsRouter);
+router.use(imgproxyRouter);
 
 export default router;

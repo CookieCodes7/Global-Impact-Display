@@ -76,14 +76,22 @@ router.get("/news", async (req, res) => {
 
         const publishedAt = parsePublishTime(n.providerPublishTime);
 
-        // Best thumbnail URL
+        // Extract highest-resolution thumbnail
+        // Yahoo Finance returns 140x140 resized images via their CDN.
+        // The original full-res source URL is embedded after the base64 params:
+        // https://s.yimg.com/uu/api/res/1.2/{HASH}~B/{BASE64}/{ORIGINAL_URL}
         let thumbnailUrl: string | null = null;
         const resolutions = n.thumbnail?.resolutions ?? [];
-        // Prefer 140px or closest to it
+        // Pick the largest available resolution
         const sorted = [...resolutions]
           .filter(r => r.url)
-          .sort((a, b) => Math.abs((a.width ?? 0) - 300) - Math.abs((b.width ?? 0) - 300));
-        if (sorted.length > 0) thumbnailUrl = sorted[0].url ?? null;
+          .sort((a, b) => (b.width ?? 0) - (a.width ?? 0));
+        if (sorted.length > 0) {
+          const raw = sorted[0].url ?? "";
+          // Try to extract original source URL from Yahoo CDN resizer
+          const origMatch = raw.match(/~B\/[^/]+\/(https?:\/\/.+)/);
+          thumbnailUrl = origMatch ? origMatch[1] : raw;
+        }
 
         articles.push({
           uuid: n.uuid ?? key,

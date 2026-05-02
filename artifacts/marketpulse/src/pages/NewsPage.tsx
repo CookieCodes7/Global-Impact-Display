@@ -179,18 +179,17 @@ export default function NewsPage() {
           />
         </div>
 
-        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 12 }}>
-          {loading ? (
-            <span style={{ fontSize: 9, color: 'var(--neut)', display: 'flex', alignItems: 'center', gap: 5 }}>
-              <div className="sp-spinner" style={{ width: 8, height: 8, borderWidth: 1.5 }} />
-              Loading...
-            </span>
-          ) : (
-            <span style={{ fontSize: 9, color: 'var(--muted)' }}>
-              <span style={{ color: 'var(--bull)' }}>●</span> Refresh in {countdown}s
-              <button onClick={() => fetchNews(market)} style={{ background: 'none', border: 'none', color: '#3b9eff', cursor: 'pointer', fontSize: 9, marginLeft: 6, fontFamily: 'var(--font)' }}>↺ Now</button>
-            </span>
-          )}
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <button
+            onClick={() => { fetchNews(market); setCountdown(REFRESH_INTERVAL); }}
+            disabled={loading}
+            className="news-refresh-btn"
+          >
+            {loading
+              ? <><div className="sp-spinner" style={{ width: 9, height: 9, borderWidth: 1.5 }} /> Refreshing...</>
+              : <>↺ Refresh · {countdown}s</>
+            }
+          </button>
           {refreshedAt && (
             <span style={{ fontSize: 8, color: 'var(--dim)' }}>Updated {timeAgo(refreshedAt)}</span>
           )}
@@ -222,19 +221,20 @@ export default function NewsPage() {
             </div>
           ) : (
             <div className="news-grid">
-              {filteredArticles.map(article => (
+              {filteredArticles.map((article, idx) => (
                 <div
                   key={article.uuid}
                   className={`news-card${selectedArticle?.uuid === article.uuid ? ' selected' : ''}`}
                   onClick={() => setSelectedArticle(prev => prev?.uuid === article.uuid ? null : article)}
+                  style={{ animationDelay: `${Math.min(idx, 12) * 30}ms` }}
                 >
                   {/* Thumbnail */}
                   {article.thumbnail && (
                     <div className="news-card-thumb">
                       <img
-                        src={article.thumbnail}
+                        src={`/api/img?url=${encodeURIComponent(article.thumbnail)}`}
                         alt=""
-                        onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                        onError={e => { (e.target as HTMLImageElement).parentElement!.style.display = 'none'; }}
                       />
                     </div>
                   )}
@@ -269,6 +269,22 @@ export default function NewsPage() {
               ))}
             </div>
           )}
+
+          {/* Footer refresh button — visible after scrolling through all articles */}
+          {filteredArticles.length > 0 && (
+            <div className="news-refresh-footer">
+              <button
+                className="news-refresh-footer-btn"
+                onClick={() => { fetchNews(market); setCountdown(REFRESH_INTERVAL); }}
+                disabled={loading}
+              >
+                {loading ? '⟳ Fetching latest news...' : '↺ Load Fresh News'}
+              </button>
+              {refreshedAt && (
+                <span style={{ fontSize: 9, color: 'var(--dim)' }}>Last updated {timeAgo(refreshedAt)}</span>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Article Detail Panel */}
@@ -286,7 +302,7 @@ export default function NewsPage() {
               {selectedArticle.thumbnail && (
                 <div className="news-detail-thumb">
                   <img
-                    src={selectedArticle.thumbnail}
+                    src={`/api/img?url=${encodeURIComponent(selectedArticle.thumbnail)}`}
                     alt=""
                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     onError={e => { (e.target as HTMLImageElement).parentElement!.style.display = 'none'; }}
