@@ -581,7 +581,7 @@ export default function LandingPage() {
           <span className="lp-team-dot" style={{ background: '#f5c842' }} />
           <span className="lp-team-dot" style={{ background: '#a78bfa' }} />
           <span className="lp-team-dot" style={{ background: '#ff4d4f' }} />
-          <span className="lp-team-strip-text">TEAM NEXUS · JAIPUR, INDIA · 2025</span>
+          <span className="lp-team-strip-text">TEAM NEXUS · JAIPUR, INDIA · 2026</span>
         </div>
       </section>
 
