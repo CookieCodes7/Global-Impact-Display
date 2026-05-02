@@ -592,12 +592,7 @@ export default function LandingPage() {
           <span className="lp-footer-sep">·</span>
           <span className="lp-footer-bar-sub">Built by Team Nexus, Jaipur</span>
         </div>
-        <div className="lp-footer-links">
-          <a href="#" className="lp-footer-link">TERMS</a>
-          <a href="#" className="lp-footer-link">PRIVACY</a>
-          <a href="#" className="lp-footer-link">STATUS</a>
-          <a href="#" className="lp-footer-link">API</a>
-        </div>
+
         <div className="lp-footer-status">
           <span className="lp-status-dot" />
           ALL SYSTEMS OPERATIONAL
