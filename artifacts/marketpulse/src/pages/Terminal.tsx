@@ -368,6 +368,13 @@ export default function Terminal() {
         activeMarket={activeMarket}
         onChange={id => { setActiveMarket(id); setSelectedCountry(null); }}
         liveIndices={liveIndices}
+        searchSlot={
+          <StockSearch
+            marketId={activeMarket}
+            onSelect={handleAddStock}
+            placeholder={`Search ${market.name}...`}
+          />
+        }
       />
 
       {/* Header */}
@@ -378,14 +385,6 @@ export default function Terminal() {
         <Link href="/commodities" className="mp-nav-btn" style={{ color: '#f5c242', background: '#f5c24218', border: '2px solid #f5c24255' }}>
           🏅 Commodities
         </Link>
-
-        {/* Smart stock search — placed prominently beside Commodities */}
-        <StockSearch
-          marketId={activeMarket}
-          onSelect={handleAddStock}
-          placeholder={`Search ${market.name} stocks...`}
-        />
-
         <Link href="/portfolio" className="mp-nav-btn" style={{ color: '#3b9eff', background: '#3b9eff18', border: '2px solid #3b9eff55' }}>
           📊 Portfolio
         </Link>

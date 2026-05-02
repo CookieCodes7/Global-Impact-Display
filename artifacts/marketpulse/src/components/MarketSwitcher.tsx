@@ -1,3 +1,4 @@
+import React from 'react';
 import { MARKET_ORDER, MARKETS } from '../data';
 import { QuoteResult } from '../hooks/useRealTimeQuotes';
 
@@ -5,6 +6,7 @@ interface MarketSwitcherProps {
   activeMarket: string;
   onChange: (id: string) => void;
   liveIndices?: Record<string, QuoteResult>;
+  searchSlot?: React.ReactNode;
 }
 
 const MARKET_COLORS: Record<string, string> = {
@@ -20,7 +22,7 @@ function fmtIdx(v: number | null | undefined, fallback: string): string {
   return v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-export default function MarketSwitcher({ activeMarket, onChange, liveIndices = {} }: MarketSwitcherProps) {
+export default function MarketSwitcher({ activeMarket, onChange, liveIndices = {}, searchSlot }: MarketSwitcherProps) {
   return (
     <div style={{
       background: '#090d11',
@@ -90,6 +92,13 @@ export default function MarketSwitcher({ activeMarket, onChange, liveIndices = {
           );
         })}
       </div>
+
+      {/* Search slot — sits between market tabs and benchmark numbers */}
+      {searchSlot && (
+        <div style={{ flex: 1, maxWidth: 320, minWidth: 160, marginLeft: 10 }}>
+          {searchSlot}
+        </div>
+      )}
 
       {/* Live benchmark row — right side */}
       <div style={{ display: 'flex', gap: 16, marginLeft: 'auto', alignItems: 'center' }}>
