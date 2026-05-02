@@ -6,6 +6,7 @@ import WorldMap from '../components/WorldMap';
 import Clock from '../components/Clock';
 import MarketSwitcher from '../components/MarketSwitcher';
 import StockSearch from '../components/StockSearch';
+import ProfilePanel from '../components/ProfilePanel';
 import { useIsMobile } from '../hooks/use-mobile';
 import { MARKETS, COUNTRY_DATA, WAR_EVENTS, Stock } from '../data';
 import { useRealTimeQuotes, QuoteResult, DEFAULT_YAHOO_SYMBOLS } from '../hooks/useRealTimeQuotes';
@@ -48,58 +49,36 @@ function makeDefaultWatchlist(): Record<string, Record<string, string>> {
   return result;
 }
 
-function UserBadge() {
-  const { user, logout } = useAuth();
-  const [, navigate] = useLocation();
-  const [open, setOpen] = useState(false);
+function UserBadge({ onClick }: { onClick: () => void }) {
+  const { user } = useAuth();
   if (!user) return null;
-  const handleLogout = () => { logout(); navigate('/landing'); };
   return (
-    <div style={{ position: 'relative', marginLeft: 'auto', flexShrink: 0 }}>
-      <button
-        onClick={() => setOpen(o => !o)}
-        style={{
-          display: 'flex', alignItems: 'center', gap: 7, background: '#1c2530',
-          border: '1px solid #1e2d3d', borderRadius: 6, padding: '5px 10px',
-          cursor: 'pointer', color: 'var(--text)', fontFamily: 'var(--font)', fontSize: 12,
-        }}
-      >
-        <span style={{
-          width: 26, height: 26, borderRadius: '50%', background: '#3b9eff22',
-          border: '1.5px solid #3b9eff66', display: 'flex', alignItems: 'center',
-          justifyContent: 'center', color: '#3b9eff', fontWeight: 600, fontSize: 11, flexShrink: 0,
-        }}>{user.initials}</span>
-        <span style={{ maxWidth: 90, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.name}</span>
-        <span style={{ color: 'var(--muted)', fontSize: 10 }}>▾</span>
-      </button>
-      {open && (
-        <>
-          <div style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={() => setOpen(false)} />
-          <div style={{
-            position: 'absolute', top: 'calc(100% + 6px)', right: 0, zIndex: 100,
-            background: '#111820', border: '1px solid #1e2d3d', borderRadius: 8,
-            minWidth: 170, boxShadow: '0 8px 32px #0008', padding: '6px 0',
-          }}>
-            <div style={{ padding: '8px 14px 10px', borderBottom: '1px solid #1e2d3d' }}>
-              <div style={{ color: 'var(--text)', fontSize: 12, fontWeight: 600 }}>{user.name}</div>
-              <div style={{ color: 'var(--muted)', fontSize: 11, marginTop: 2 }}>{user.email}</div>
-            </div>
-            <button
-              onClick={handleLogout}
-              style={{
-                width: '100%', textAlign: 'left', padding: '8px 14px', background: 'none',
-                border: 'none', color: 'var(--bear)', fontFamily: 'var(--font)', fontSize: 12,
-                cursor: 'pointer', letterSpacing: 0.5,
-              }}
-              onMouseEnter={e => (e.currentTarget.style.background = '#ff4d4f12')}
-              onMouseLeave={e => (e.currentTarget.style.background = 'none')}
-            >
-              ⏻ Logout
-            </button>
-          </div>
-        </>
-      )}
-    </div>
+    <button
+      onClick={onClick}
+      title="Open profile"
+      style={{
+        display: 'flex', alignItems: 'center', gap: 7, background: '#1c2530',
+        border: '1px solid #1e2d3d', borderRadius: 6, padding: '4px 10px 4px 4px',
+        cursor: 'pointer', color: 'var(--text)', fontFamily: 'var(--font)', fontSize: 12,
+        flexShrink: 0, transition: 'border-color .15s',
+      }}
+      onMouseEnter={e => (e.currentTarget.style.borderColor = '#3b9eff66')}
+      onMouseLeave={e => (e.currentTarget.style.borderColor = '#1e2d3d')}
+    >
+      <span style={{
+        width: 26, height: 26, borderRadius: '50%',
+        background: user.avatar ? 'transparent' : '#3b9eff22',
+        border: '1.5px solid #3b9eff66',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        color: '#3b9eff', fontWeight: 600, fontSize: 11, flexShrink: 0, overflow: 'hidden',
+      }}>
+        {user.avatar
+          ? <img src={user.avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          : user.initials}
+      </span>
+      <span style={{ maxWidth: 80, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.name}</span>
+      <span style={{ color: 'var(--muted)', fontSize: 9 }}>▸</span>
+    </button>
   );
 }
 
@@ -129,6 +108,7 @@ export default function Terminal() {
   const [cmdtyCurrency, setCmdtyCurrency] = useState<'USD' | 'INR'>('USD');
   const [usdInr, setUsdInr] = useState<number>(83.5);
   const [chartMode, setChartMode] = useState<'line' | 'candle'>('line');
+  const [profileOpen, setProfileOpen] = useState(false);
 
   // ── Geopolitical war news ──────────────────────────────────────────────────
   const [warNews, setWarNews] = useState<Record<string, { title: string; publisher: string; link: string; publishedAt: string | null }[]>>({});
@@ -482,8 +462,15 @@ export default function Terminal() {
           </span>
         </div>
         <Clock />
-        <UserBadge />
+        <UserBadge onClick={() => setProfileOpen(true)} />
       </div>
+
+      <ProfilePanel
+        open={profileOpen}
+        onClose={() => setProfileOpen(false)}
+        watchlistCount={Object.values(watchlistSymbols).reduce((acc, m) => acc + Object.keys(m).length, 0)}
+        activeMarkets={Object.keys(stocksByMarket).length}
+      />
 
       {/* Main */}
       <div
