@@ -47,15 +47,7 @@ function getSignalColor(sig: string) {
   return sig === 'BULL' ? 'var(--bull)' : sig === 'BEAR' ? 'var(--bear)' : 'var(--neut)';
 }
 
-const FILTERS = [
-  { key: 'all', label: 'All' },
-  { key: 'bull', label: 'Bullish' },
-  { key: 'bear', label: 'Bearish' },
-  { key: 'neut', label: 'Neutral' },
-];
-
 export default function MapPage() {
-  const [activeFilter, setActiveFilter] = useState('all');
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [liveData, setLiveData] = useState<LiveData | null>(null);
   const [liveLoading, setLiveLoading] = useState(false);
@@ -84,12 +76,7 @@ export default function MapPage() {
   const countryCol = country ? getSignalColor(country.sig) : 'var(--bull)';
   const scoreAbs = country ? Math.abs(country.score) : 0;
 
-  const filteredEntries = Object.entries(COUNTRY_DATA).filter(([, cd]) => {
-    if (activeFilter === 'bull') return cd.sig === 'BULL';
-    if (activeFilter === 'bear') return cd.sig === 'BEAR';
-    if (activeFilter === 'neut') return cd.sig === 'NEUT';
-    return true;
-  });
+  const allEntries = Object.entries(COUNTRY_DATA);
 
   const stats = {
     bull: Object.values(COUNTRY_DATA).filter(c => c.sig === 'BULL').length,
@@ -127,29 +114,6 @@ export default function MapPage() {
           </div>
         </div>
         <Clock />
-      </div>
-
-      {/* Filters */}
-      <div className="map-filters">
-        <span className="map-filters-label">Filter:</span>
-        {FILTERS.map(f => (
-          <button
-            key={f.key}
-            className={`filter-btn${activeFilter === f.key ? ' active' : ''}`}
-            onClick={() => setActiveFilter(f.key)}
-          >
-            {f.label}
-          </button>
-        ))}
-        {selectedId && (
-          <button
-            className="filter-btn"
-            style={{ marginLeft: 'auto', borderColor: 'var(--muted)', color: 'var(--muted)' }}
-            onClick={() => setSelectedId(null)}
-          >
-            Clear Selection ✕
-          </button>
-        )}
       </div>
 
       {/* Body */}
@@ -205,8 +169,8 @@ export default function MapPage() {
               </div>
 
               <div style={{ borderTop: '1px solid var(--border)' }}>
-                <div className="panel-hdr">Coverage ({filteredEntries.length})</div>
-                {filteredEntries.map(([id, cd]) => {
+                <div className="panel-hdr">Coverage ({allEntries.length})</div>
+                {allEntries.map(([id, cd]) => {
                   const c = getSignalColor(cd.sig);
                   return (
                     <div
