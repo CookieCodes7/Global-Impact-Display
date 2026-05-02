@@ -6,6 +6,7 @@ import WorldMap from '../components/WorldMap';
 import Clock from '../components/Clock';
 import MarketSwitcher from '../components/MarketSwitcher';
 import StockSearch from '../components/StockSearch';
+import { useIsMobile } from '../hooks/use-mobile';
 import { MARKETS, COUNTRY_DATA, Stock } from '../data';
 import { useRealTimeQuotes, QuoteResult, DEFAULT_YAHOO_SYMBOLS } from '../hooks/useRealTimeQuotes';
 import { StockEntry } from '../data/stockUniverse';
@@ -104,6 +105,7 @@ function UserBadge() {
 
 export default function Terminal() {
   // ── State ──────────────────────────────────────────────────────────────────
+  const isMobile = useIsMobile();
   const [activeMarket, setActiveMarket] = useState('IN');
   const [mobilePanel, setMobilePanel] = useState<'watch' | 'chart' | 'info'>('chart');
 
@@ -413,7 +415,7 @@ export default function Terminal() {
       {/* Main */}
       <div
         className={`mp-main mp-mobile-${mobilePanel}`}
-        style={{ gridTemplateColumns: `${leftWidth}px 4px 1fr 4px ${rightWidth}px` }}
+        style={isMobile ? undefined : { gridTemplateColumns: `${leftWidth}px 4px 1fr 4px ${rightWidth}px` }}
       >
 
         {/* LEFT: Watchlist */}
