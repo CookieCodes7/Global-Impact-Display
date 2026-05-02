@@ -67,6 +67,32 @@ export default function Terminal() {
   const [quoteStatus, setQuoteStatus] = useState<'loading' | 'live' | 'error'>('loading');
   const [selectedCountry, setSelectedCountry] = useState<number | null>(null);
 
+  // ── Resizable panels ───────────────────────────────────────────────────────
+  const [leftWidth, setLeftWidth] = useState(180);
+  const [rightWidth, setRightWidth] = useState(220);
+  const dragging = useRef<null | { side: 'left' | 'right'; startX: number; startW: number }>(null);
+
+  const onResizeMouseDown = useCallback((side: 'left' | 'right') => (e: React.MouseEvent) => {
+    e.preventDefault();
+    dragging.current = { side, startX: e.clientX, startW: side === 'left' ? leftWidth : rightWidth };
+    const onMove = (ev: MouseEvent) => {
+      if (!dragging.current) return;
+      const delta = ev.clientX - dragging.current.startX;
+      if (dragging.current.side === 'left') {
+        setLeftWidth(Math.min(360, Math.max(140, dragging.current.startW + delta)));
+      } else {
+        setRightWidth(Math.min(400, Math.max(160, dragging.current.startW - delta)));
+      }
+    };
+    const onUp = () => {
+      dragging.current = null;
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  }, [leftWidth, rightWidth]);
+
   // ── Live AI analysis cache ─────────────────────────────────────────────────
   const [analysisCache, setAnalysisCache] = useState<Record<string, {
     sig: string; conf: number; target: number; reasoning: string; loaded: boolean;
@@ -328,7 +354,10 @@ export default function Terminal() {
       </div>
 
       {/* Main */}
-      <div className={`mp-main mp-mobile-${mobilePanel}`}>
+      <div
+        className={`mp-main mp-mobile-${mobilePanel}`}
+        style={{ gridTemplateColumns: `${leftWidth}px 4px 1fr 4px ${rightWidth}px` }}
+      >
 
         {/* LEFT: Watchlist */}
         <div className="mp-left">
@@ -376,6 +405,9 @@ export default function Terminal() {
             Search above to add more stocks
           </div>
         </div>
+
+        {/* RESIZE HANDLE: left */}
+        <div className="mp-resize-handle" onMouseDown={onResizeMouseDown('left')} title="Drag to resize watchlist" />
 
         {/* CENTER */}
         <div className="mp-center">
@@ -513,6 +545,9 @@ export default function Terminal() {
             })}
           </div>
         </div>
+
+        {/* RESIZE HANDLE: right */}
+        <div className="mp-resize-handle" onMouseDown={onResizeMouseDown('right')} title="Drag to resize news feed" />
 
         {/* RIGHT: News */}
         <div className="mp-right">

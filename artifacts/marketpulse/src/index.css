@@ -54,8 +54,25 @@ body {
 .session-dot { width: 7px; height: 7px; border-radius: 50%; animation: pulse 2s infinite; margin-right: 4px; display: inline-block; }
 @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
 
-/* Main layout — now 3 rows: ticker + switcher + header + main */
-.mp-main { display: grid; grid-template-columns: 180px 1fr 220px; height: calc(100vh - 114px); min-height: 500px; overflow: hidden; }
+/* Main layout */
+.mp-main { display: grid; grid-template-columns: 180px 4px 1fr 4px 220px; height: calc(100vh - 114px); min-height: 500px; overflow: hidden; }
+
+/* Resize handles */
+.mp-resize-handle {
+  background: var(--border);
+  cursor: col-resize;
+  transition: background .15s;
+  position: relative;
+  z-index: 10;
+  flex-shrink: 0;
+}
+.mp-resize-handle::after {
+  content: '';
+  position: absolute;
+  inset: 0 -4px;
+}
+.mp-resize-handle:hover,
+.mp-resize-handle:active { background: var(--accent); }
 
 /* Left panel */
 .mp-left { background: var(--bg2); border-right: 1px solid var(--border); overflow-y: auto; display: flex; flex-direction: column; }
@@ -427,7 +444,7 @@ body {
    TABLET  (769px – 1024px)
 ═══════════════════════════════════════════════════════════ */
 @media (max-width: 1024px) {
-  .mp-main { grid-template-columns: 155px 1fr 195px; }
+  .mp-main { grid-template-columns: 155px 4px 1fr 4px 195px; }
   .sp-body { grid-template-columns: 165px 1fr 165px; }
   .map-side-panel { width: 280px; }
 }
@@ -449,6 +466,7 @@ body {
     grid-template-columns: 1fr;
     height: calc(100svh - 100px);
   }
+  .mp-resize-handle { display: none; }
   .mp-left  { display: none; }
   .mp-right { display: none; }
   .mp-center { display: flex; }
