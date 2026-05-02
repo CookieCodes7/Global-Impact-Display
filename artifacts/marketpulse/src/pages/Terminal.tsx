@@ -317,13 +317,13 @@ export default function Terminal() {
         <Link href="/" className="mp-logo" style={{ color: accentCol }}>
           MARKET<span style={{ color: '#3b9eff' }}>PULSE</span>
         </Link>
-        <Link href="/portfolio" style={{ fontSize: 9, color: '#3b9eff', background: '#3b9eff18', border: '1px solid #3b9eff44', padding: '2px 10px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap', letterSpacing: 0.5 }}>
+        <Link href="/portfolio" className="mp-nav-btn" style={{ color: '#3b9eff', background: '#3b9eff18', border: '2px solid #3b9eff55' }}>
           📊 Portfolio
         </Link>
-        <Link href="/news" style={{ fontSize: 9, color: '#a78bfa', background: '#a78bfa18', border: '1px solid #a78bfa44', padding: '2px 10px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap', letterSpacing: 0.5 }}>
+        <Link href="/news" className="mp-nav-btn" style={{ color: '#a78bfa', background: '#a78bfa18', border: '2px solid #a78bfa55' }}>
           📰 News
         </Link>
-        <div style={{ fontSize: 9, color: accentCol, background: accentCol + '18', border: `1px solid ${accentCol}44`, padding: '2px 8px', letterSpacing: 1, textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
+        <div style={{ fontSize: 12, color: accentCol, background: accentCol + '18', border: `1px solid ${accentCol}44`, padding: '6px 12px', letterSpacing: 1, textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
           {market.flag} {market.name} · {market.exchange}
         </div>
 
