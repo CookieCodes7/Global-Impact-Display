@@ -49,6 +49,7 @@ function makeDefaultWatchlist(): Record<string, Record<string, string>> {
 export default function Terminal() {
   // ── State ──────────────────────────────────────────────────────────────────
   const [activeMarket, setActiveMarket] = useState('IN');
+  const [mobilePanel, setMobilePanel] = useState<'watch' | 'chart' | 'info'>('chart');
 
   // stocksByMarket: marketId → Stock[]
   const [stocksByMarket, setStocksByMarket] = useState<Record<string, Stock[]>>(() =>
@@ -328,7 +329,7 @@ export default function Terminal() {
       </div>
 
       {/* Main */}
-      <div className="mp-main">
+      <div className={`mp-main mp-mobile-${mobilePanel}`}>
 
         {/* LEFT: Watchlist */}
         <div className="mp-left">
@@ -536,6 +537,22 @@ export default function Terminal() {
           ))}
         </div>
       </div>
+
+      {/* Mobile Bottom Navigation */}
+      <nav className="mp-mobile-nav">
+        <button className={`mob-nav-btn${mobilePanel === 'watch' ? ' active' : ''}`} onClick={() => setMobilePanel('watch')}>
+          <span className="mob-nav-icon">📋</span>
+          <span className="mob-nav-label">Watchlist</span>
+        </button>
+        <button className={`mob-nav-btn${mobilePanel === 'chart' ? ' active' : ''}`} onClick={() => setMobilePanel('chart')}>
+          <span className="mob-nav-icon">📈</span>
+          <span className="mob-nav-label">Chart</span>
+        </button>
+        <button className={`mob-nav-btn${mobilePanel === 'info' ? ' active' : ''}`} onClick={() => setMobilePanel('info')}>
+          <span className="mob-nav-icon">📰</span>
+          <span className="mob-nav-label">News</span>
+        </button>
+      </nav>
     </div>
   );
 }

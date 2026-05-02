@@ -61,6 +61,7 @@ export default function StockPage() {
   const params = useParams<{ symbol: string }>();
   const symbol = decodeURIComponent(params.symbol ?? '');
 
+  const [mobilePanel, setMobilePanel] = useState<'metrics' | 'chart' | 'summary'>('chart');
   const [detail, setDetail] = useState<StockDetail | null>(null);
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
   const [detailLoading, setDetailLoading] = useState(true);
@@ -150,7 +151,7 @@ export default function StockPage() {
       </div>
 
       {/* Body */}
-      <div className="sp-body">
+      <div className={`sp-body sp-mobile-${mobilePanel}`}>
 
         {/* LEFT: Key Metrics */}
         <div className="sp-left">
@@ -391,7 +392,7 @@ export default function StockPage() {
         </div>
 
         {/* RIGHT: AI Summary + Analyst */}
-        <div className="sp-right">
+        <div className="sp-right" style={{ paddingBottom: 52 }}>
           <div className="panel-hdr">AI Signal Summary</div>
           {analysisLoading ? (
             <div style={{ padding: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -473,6 +474,22 @@ export default function StockPage() {
           )}
         </div>
       </div>
+
+      {/* Mobile Bottom Navigation */}
+      <nav className="sp-mobile-nav">
+        <button className={`mob-nav-btn${mobilePanel === 'metrics' ? ' active' : ''}`} onClick={() => setMobilePanel('metrics')}>
+          <span className="mob-nav-icon">📊</span>
+          <span className="mob-nav-label">Metrics</span>
+        </button>
+        <button className={`mob-nav-btn${mobilePanel === 'chart' ? ' active' : ''}`} onClick={() => setMobilePanel('chart')}>
+          <span className="mob-nav-icon">📈</span>
+          <span className="mob-nav-label">Chart</span>
+        </button>
+        <button className={`mob-nav-btn${mobilePanel === 'summary' ? ' active' : ''}`} onClick={() => setMobilePanel('summary')}>
+          <span className="mob-nav-icon">🤖</span>
+          <span className="mob-nav-label">AI</span>
+        </button>
+      </nav>
     </div>
   );
 }
