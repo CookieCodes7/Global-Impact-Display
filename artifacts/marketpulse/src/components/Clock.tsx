@@ -6,9 +6,9 @@ export default function Clock() {
   useEffect(() => {
     const update = () => {
       const now = new Date();
-      const ny = now.toLocaleTimeString('en-US', { hour12: false, timeZone: 'America/New_York' });
-      const lon = now.toLocaleTimeString('en-GB', { hour12: false, timeZone: 'Europe/London' });
-      setTime(`NY ${ny} · LON ${lon}`);
+      const ny  = now.toLocaleTimeString('en-US', { hour12: false, timeZone: 'America/New_York' });
+      const ist = now.toLocaleTimeString('en-IN', { hour12: false, timeZone: 'Asia/Kolkata' });
+      setTime(`NY ${ny} · IST ${ist}`);
     };
     update();
     const id = setInterval(update, 1000);
