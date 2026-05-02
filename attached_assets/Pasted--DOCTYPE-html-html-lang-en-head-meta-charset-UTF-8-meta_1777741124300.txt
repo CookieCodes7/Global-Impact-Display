@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#0b0f14;--bg2:#111820;--bg3:#161d26;--bg4:#1c2530;
+    --bull:#00ff9c;--bear:#ff4d4f;--neut:#f5c842;--info:#3b9eff;
+    --border:#1e2d3d;--text:#c8d8e8;--muted:#5a7a94;--dim:#2a3a4a;
+    --font:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;
+  }
+  body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:11px;overflow-x:hidden}
+  .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+  /* Ticker */
+  #ticker-bar{background:#090d11;border-bottom:1px solid var(--border);height:28px;overflow:hidden;display:flex;align-items:center}
+  #ticker-track{display:flex;gap:32px;white-space:nowrap;animation:scroll 45s linear infinite;padding:0 20px}
+  @keyframes scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+  .tick-item{display:flex;gap:6px;align-items:center;font-size:10px}
+  .tick-sym{color:#7fb3d3;font-weight:600}
+  .tick-price{color:var(--text)}
+  .tick-chg.up{color:var(--bull)}
+  .tick-chg.dn{color:var(--bear)}
+  /* Header */
+  #header{background:var(--bg2);border-bottom:1px solid var(--border);padding:6px 14px;display:flex;align-items:center;gap:12px;height:42px}
+  #logo{font-size:14px;font-weight:600;color:var(--bull);letter-spacing:2px;white-space:nowrap}
+  #logo span{color:#3b9eff}
+  #search{flex:1;max-width:260px;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:4px 10px;font-family:var(--font);font-size:10px;outline:none}
+  #search::placeholder{color:var(--muted)}
+  .hdr-stat{display:flex;flex-direction:column;align-items:center;padding:0 10px;border-left:1px solid var(--border)}
+  .hdr-stat .lbl{font-size:9px;color:var(--muted);text-transform:uppercase}
+  .hdr-stat .val{font-size:11px;font-weight:500}
+  .session-dot{width:7px;height:7px;border-radius:50%;background:var(--bull);animation:pulse 2s infinite;margin-right:4px;display:inline-block}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+  /* Main layout */
+  #main{display:grid;grid-template-columns:180px 1fr 220px;grid-template-rows:auto auto;height:calc(100vh - 70px);min-height:600px}
+  /* Left panel */
+  #left{background:var(--bg2);border-right:1px solid var(--border);overflow-y:auto;display:flex;flex-direction:column}
+  .panel-hdr{background:var(--bg3);border-bottom:1px solid var(--border);padding:5px 10px;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+  .panel-hdr button{background:none;border:1px solid var(--border);color:var(--bull);font-size:9px;padding:1px 6px;cursor:pointer;font-family:var(--font)}
+  .watch-item{padding:6px 10px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s}
+  .watch-item:hover{background:var(--bg3)}
+  .watch-item.active{background:var(--dim);border-left:2px solid var(--bull)}
+  .w-sym{color:#7fb3d3;font-weight:600;font-size:11px}
+  .w-name{color:var(--muted);font-size:9px}
+  .w-price{font-size:12px;font-weight:500;float:right}
+  .w-chg{font-size:10px;float:right;clear:right}
+  .bull{color:var(--bull)}
+  .bear{color:var(--bear)}
+  /* Center panel */
+  #center{background:var(--bg);overflow-y:auto;display:flex;flex-direction:column}
+  /* Right panel */
+  #right{background:var(--bg2);border-left:1px solid var(--border);overflow-y:auto;display:flex;flex-direction:column}
+  /* Bottom panel */
+  #bottom{grid-column:1/-1;background:var(--bg2);border-top:1px solid var(--border);height:130px;overflow:hidden;display:flex;flex-direction:column}
+  /* Indices */
+  #indices{display:flex;gap:1px;padding:8px;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0}
+  .idx-card{flex:1;background:var(--bg3);padding:6px 10px;border:1px solid var(--border)}
+  .idx-name{font-size:9px;color:var(--muted);text-transform:uppercase}
+  .idx-val{font-size:14px;font-weight:600;margin:2px 0}
+  .idx-chg{font-size:10px}
+  /* Stock detail */
+  #stock-detail{padding:8px;display:flex;gap:8px;flex-shrink:0}
+  .stock-info{background:var(--bg3);border:1px solid var(--border);padding:8px;flex:1}
+  .stock-sym{font-size:18px;font-weight:600;color:var(--bull)}
+  .stock-name{font-size:10px;color:var(--muted)}
+  .stock-price{font-size:22px;font-weight:600;margin:4px 0}
+  .stock-meta{display:flex;gap:12px;font-size:10px;color:var(--muted)}
+  /* Chart */
+  #chart-wrap{padding:0 8px 8px;flex:1;min-height:120px}
+  canvas#sparkChart{width:100%!important}
+  /* AI signal */
+  #ai-panel{padding:8px;display:flex;gap:8px;flex-shrink:0}
+  .signal-card{background:var(--bg3);border:1px solid var(--border);padding:10px;flex:1}
+  .signal-label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
+  .signal-val{font-size:16px;font-weight:600;margin:2px 0}
+  .signal-bull{color:var(--bull)}
+  .signal-bear{color:var(--bear)}
+  .conf-bar-wrap{background:var(--dim);height:4px;margin-top:4px;border-radius:2px}
+  .conf-bar{height:4px;border-radius:2px;background:var(--bull);transition:width .5s}
+  .ai-explain{background:var(--bg3);border:1px solid var(--border);padding:10px;margin:0 8px 8px;font-size:10px;line-height:1.6;color:#9ab5c8;flex-shrink:0}
+  .ai-explain strong{color:var(--bull);font-size:9px;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px}
+  /* Map section */
+  #map-section{padding:8px;flex-shrink:0}
+  .map-hdr{display:flex;gap:8px;align-items:center;margin-bottom:6px;flex-wrap:wrap}
+  .map-hdr span{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
+  .filter-btn{background:var(--bg3);border:1px solid var(--border);color:var(--muted);font-size:9px;padding:2px 8px;cursor:pointer;font-family:var(--font)}
+  .filter-btn.active{background:var(--dim);color:var(--bull);border-color:var(--bull)}
+  #world-map{width:100%;height:220px;position:relative;background:var(--bg3);border:1px solid var(--border)}
+  #world-map svg{width:100%;height:100%}
+  /* Country panel */
+  #country-panel{display:none;background:var(--bg3);border:1px solid var(--bull);margin:0 8px 8px;padding:10px}
+  #country-panel.visible{display:block}
+  .cp-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  .cp-name{font-size:14px;font-weight:600}
+  .cp-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;font-family:var(--font)}
+  .cp-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px}
+  .cp-metric{background:var(--bg4);padding:6px}
+  .cp-metric .lbl{font-size:9px;color:var(--muted)}
+  .cp-metric .val{font-size:12px;font-weight:500}
+  .cp-headlines{font-size:9px;color:#8aa0b0;line-height:1.7}
+  .cp-ai{margin-top:6px;font-size:10px;color:#9ab5c8;border-top:1px solid var(--border);padding-top:6px;line-height:1.6}
+  /* News */
+  .news-item{padding:8px 10px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s}
+  .news-item:hover{background:var(--bg3)}
+  .news-src{font-size:9px;color:var(--muted);display:flex;justify-content:space-between}
+  .news-title{font-size:10px;color:var(--text);margin:3px 0;line-height:1.4;font-family:var(--sans)}
+  .news-tags{display:flex;gap:4px;margin-top:3px}
+  .tag{font-size:8px;padding:1px 5px;border-radius:1px}
+  .tag-bull{background:#00ff9c22;color:var(--bull);border:1px solid #00ff9c44}
+  .tag-bear{background:#ff4d4f22;color:var(--bear);border:1px solid #ff4d4f44}
+  .tag-neut{background:#f5c84222;color:var(--neut);border:1px solid #f5c84244}
+  .tag-ticker{background:#3b9eff22;color:var(--info);border:1px solid #3b9eff44}
+  .impact-bar{height:2px;margin-top:4px;border-radius:1px}
+  /* Correlation */
+  .corr-item{padding:5px 10px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+  .corr-sym{color:#7fb3d3;font-size:10px;font-weight:600;width:40px;flex-shrink:0}
+  .corr-bar-wrap{flex:1;background:var(--dim);height:5px;border-radius:2px}
+  .corr-bar{height:5px;border-radius:2px}
+  .corr-val{font-size:9px;color:var(--muted);width:30px;text-align:right;flex-shrink:0}
+  .corr-mentions{font-size:9px;color:var(--muted);width:50px;text-align:right;flex-shrink:0}
+  /* Scrollbar */
+  ::-webkit-scrollbar{width:4px}
+  ::-webkit-scrollbar-track{background:var(--bg)}
+  ::-webkit-scrollbar-thumb{background:var(--dim)}
+</style>
+
+<h2 class="sr-only">MarketPulse — AI-driven financial intelligence terminal with global sentiment map, stock watchlist, news feed, and AI signals.</h2>
+
+<!-- Ticker -->
+<div id="ticker-bar">
+  <div id="ticker-track"></div>
+</div>
+
+<!-- Header -->
+<div id="header">
+  <div id="logo">MARKET<span>PULSE</span></div>
+  <input id="search" type="text" placeholder="Search ticker / company..." />
+  <div class="hdr-stat"><span class="lbl">S&P 500</span><span class="val bull" id="spx-hdr">5,284.21</span></div>
+  <div class="hdr-stat"><span class="lbl">VIX</span><span class="val" style="color:var(--neut)" id="vix-hdr">18.43</span></div>
+  <div class="hdr-stat"><span class="lbl">Session</span><span class="val"><span class="session-dot"></span>LIVE</span></div>
+  <div style="margin-left:auto;font-size:9px;color:var(--muted)" id="clock"></div>
+</div>
+
+<!-- Main layout -->
+<div id="main">
+  <!-- LEFT: Watchlist -->
+  <div id="left">
+    <div class="panel-hdr">Watchlist <button onclick="addTicker()">+ ADD</button></div>
+    <div id="watchlist"></div>
+  </div>
+  
+  <!-- CENTER: Analysis -->
+  <div id="center">
+    <!-- Indices -->
+    <div id="indices"></div>
+    <!-- Stock detail -->
+    <div id="stock-detail"></div>
+    <!-- Chart -->
+    <div id="chart-wrap"><canvas id="sparkChart" height="100" role="img" aria-label="Intraday price chart for selected stock"></canvas></div>
+    <!-- AI panel -->
+    <div id="ai-panel"></div>
+    <div id="ai-explain-box" class="ai-explain"></div>
+    <!-- Map -->
+    <div id="map-section">
+      <div class="map-hdr">
+        <span>Global Market Impact Map</span>
+        <button class="filter-btn active" onclick="setFilter('all',this)">All</button>
+        <button class="filter-btn" onclick="setFilter('high',this)">High Signal</button>
+        <button class="filter-btn" onclick="setFilter('tech',this)">Tech</button>
+        <button class="filter-btn" onclick="setFilter('energy',this)">Energy</button>
+        <button class="filter-btn" onclick="setFilter('24h',this)">24h</button>
+        <button class="filter-btn" onclick="setFilter('7d',this)">7d</button>
+      </div>
+      <div id="world-map"></div>
+    </div>
+    <div id="country-panel">
+      <div class="cp-header">
+        <span class="cp-name" id="cp-name">—</span>
+        <button class="cp-close" onclick="closeCountry()">✕</button>
+      </div>
+      <div class="cp-grid">
+        <div class="cp-metric"><div class="lbl">Sentiment Score</div><div class="val" id="cp-score">—</div></div>
+        <div class="cp-metric"><div class="lbl">Signal</div><div class="val" id="cp-signal">—</div></div>
+        <div class="cp-metric"><div class="lbl">Top Sector</div><div class="val" id="cp-sector">—</div></div>
+        <div class="cp-metric"><div class="lbl">Trend</div><div class="val" id="cp-trend">—</div></div>
+      </div>
+      <div class="cp-headlines" id="cp-headlines"></div>
+      <div class="cp-ai" id="cp-ai"></div>
+    </div>
+    <!-- Bottom correlation table -->
+    <div style="padding:8px;flex-shrink:0">
+      <div class="panel-hdr" style="margin-bottom:4px">News → Stock Correlation</div>
+      <div id="correlation"></div>
+    </div>
+  </div>
+  
+  <!-- RIGHT: News -->
+  <div id="right">
+    <div class="panel-hdr">Market News Feed</div>
+    <div id="news-feed"></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+  // ── DATA ───────────────────────────────────────────────────
+const STOCKS = [
+  {sym:'AAPL',name:'Apple Inc.',price:213.45,chg:1.24,chgP:0.58,sig:'BULL',conf:82,target:228,days:7,vol:'48.3M',pe:'28.4'},
+  {sym:'TSLA',name:'Tesla Inc.',price:172.30,chg:-3.82,chgP:-2.17,sig:'BEAR',conf:71,target:158,days:5,vol:'91.7M',pe:'62.1'},
+  {sym:'NVDA',name:'NVIDIA Corp.',price:887.54,chg:12.30,chgP:1.41,sig:'BULL',conf:91,target:950,days:7,vol:'39.8M',pe:'73.2'},
+  {sym:'MSFT',name:'Microsoft Corp.',price:421.10,chg:2.55,chgP:0.61,sig:'BULL',conf:78,target:445,days:7,vol:'22.1M',pe:'37.9'},
+  {sym:'AMZN',name:'Amazon.com Inc.',price:194.72,chg:-0.83,chgP:-0.42,sig:'NEUT',conf:55,target:200,days:5,vol:'35.4M',pe:'43.7'},
+  {sym:'META',name:'Meta Platforms',price:512.88,chg:8.14,chgP:1.61,sig:'BULL',conf:85,target:555,days:7,vol:'18.2M',pe:'27.3'},
+  {sym:'GOOGL',name:'Alphabet Inc.',price:175.23,chg:1.02,chgP:0.59,sig:'BULL',conf:74,target:188,days:7,vol:'25.6M',pe:'24.8'},
+  {sym:'JPM',name:'JPMorgan Chase',price:221.45,chg:-1.23,chgP:-0.55,sig:'BEAR',conf:62,target:210,days:5,vol:'11.3M',pe:'12.4'},
+];
+
+const INDICES = [
+  {name:'S&P 500',val:'5,284.21',chg:'+18.43',chgP:'+0.35%',dir:1},
+  {name:'NASDAQ',val:'16,742.39',chg:'+93.17',chgP:'+0.56%',dir:1},
+  {name:'DOW JONES',val:'39,127.14',chg:'-42.81',chgP:'-0.11%',dir:-1},
+  {name:'RUSSELL 2K',val:'2,083.45',chg:'+11.22',chgP:'+0.54%',dir:1},
+];
+
+const NEWS = [
+{src:'Reuters',time:'2m ago',ticker:'NVDA',title:'NVIDIA beats Q1 earnings estimates by 28%, data center revenue surges to record $22B',sent:'BULL',impact:0.92},
+{src:'Bloomberg',time:'8m ago',ticker:'TSLA',title:'Tesla cuts Model Y prices in Europe amid slowing demand; analysts revise targets lower',sent:'BEAR',impact:0.81},
+{src:'WSJ',time:'15m ago',ticker:'AAPL',title:'Apple\'s Vision Pro 2 development confirmed; mixed reality pipeline stronger than expected',sent:'BULL',impact:0.74},
+{src:'CNBC',time:'22m ago',ticker:'JPM',title:'Fed minutes signal rates on hold longer; financial sector faces headwinds into Q3',sent:'BEAR',impact:0.69},
+{src:'FT',time:'31m ago',ticker:'META',title:'Meta AI assistant reaches 500M users, Zuckerberg forecasts ad revenue acceleration',sent:'BULL',impact:0.88},
+{src:'MarketWatch',time:'44m ago',ticker:'AMZN',title:'Amazon AWS growth slows to 17% YoY; cloud margin expansion offsets top-line miss',sent:'NEUT',impact:0.58},
+{src:'TheStreet',time:'52m ago',ticker:'MSFT',title:'Microsoft Copilot enterprise adoption doubles; Azure AI workloads driving $12B incremental ARR',sent:'BULL',impact:0.79},
+{src:'Barrons',time:'1h ago',ticker:'GOOGL',title:'Google Search ad market share recovers to 90.2% in April; Gemini integration credited',sent:'BULL',impact:0.65},
+];
+
+const CORR = [
+{sym:'NVDA',mentions:4821,score:0.91,dir:1},
+{sym:'TSLA',mentions:3204,score:-0.74,dir:-1},
+{sym:'META',mentions:2887,score:0.83,dir:1},
+{sym:'AAPL',mentions:2103,score:0.61,dir:1},
+{sym:'JPM',mentions:1544,score:-0.52,dir:-1},
+{sym:'MSFT',mentions:1288,score:0.69,dir:1},
+];
+
+const COUNTRY_DATA = {
+  840:{name:'United States',score:0.72,sig:'BULL',sector:'Technology',trend:'↑',headlines:['Fed signals pause on rate hikes','Big Tech earnings beat expectations','AI infrastructure spending boom continues'],ai:'The US shows strongly bullish sentiment driven by AI sector momentum and tech earnings beats. Federal Reserve signaling a hold on rates reduces near-term macro risk.'},
+  276:{name:'Germany',score:-0.48,sig:'BEAR',sector:'Manufacturing',trend:'↓',headlines:['Manufacturing PMI falls to 42.1, 7-month low','Energy costs squeeze industrial margins','ECB holds but outlook cautious'],ai:'Germany exhibits bearish macro conditions. Declining manufacturing output, elevated energy costs and weak PMI signals point to continued contraction in the industrial sector.'},
+  156:{name:'China',score:-0.31,sig:'BEAR',sector:'Real Estate',trend:'↓',headlines:['Property sector debt crisis deepens','Consumer spending below expectations','PBOC cuts reserve requirements again'],ai:'China faces persistent bearish pressure from property market deleveraging and weak domestic demand. Policy stimulus is insufficient to offset structural headwinds.'},
+  392:{name:'Japan',score:0.44,sig:'BULL',sector:'Export / Tech',trend:'↑',headlines:['Yen weakness boosts exporters','Toyota, Sony raise annual guidance','BoJ maintains ultra-loose policy'],ai:'Japan shows moderate bullish momentum. A weak yen is boosting export-oriented companies. Technology and automotive sectors benefit from sustained global demand.'},
+  826:{name:'United Kingdom',score:0.12,sig:'NEUT',sector:'Finance',trend:'→',headlines:['UK inflation cools to 2.3%','FTSE 100 near all-time high','BoE rate cut expected Q3'],ai:'UK sentiment is neutral-to-slightly-positive. Cooling inflation and expectations of BoE rate cuts support equities, though growth remains tepid amid fiscal constraints.'},
+  356:{name:'India',score:0.81,sig:'BULL',sector:'Technology / Finance',trend:'↑',headlines:['India GDP growth accelerates to 8.4%','Nifty 50 hits record high','Foreign institutional inflows surge'],ai:'India is the strongest bullish signal globally. Robust GDP growth, record equity markets, and surging FII inflows reflect strong macro fundamentals and tech sector expansion.'},
+  76:{name:'Brazil',score:-0.22,sig:'NEUT',sector:'Commodities',trend:'↓',headlines:['Real depreciates amid fiscal concerns','Commodity exports soften','Lula administration raises spending'],ai:'Brazil shows mildly bearish sentiment. Currency weakness and fiscal concerns offset commodity export strength. Political uncertainty weighs on investor confidence.'},
+  124:{name:'Canada',score:0.38,sig:'BULL',sector:'Energy / Finance',trend:'↑',headlines:['Oil sands production at record','BoC rate cut cycle begins','TSX financials outperforming'],ai:'Canada shows moderate bullish signals driven by energy sector performance and the start of a BoC easing cycle, which is supportive for equities and housing.'},
+  36:{name:'Australia',score:0.29,sig:'NEUT',sector:'Mining / Resources',trend:'→',headlines:['RBA holds rates steady','Iron ore prices stabilise','Consumer confidence ticks up'],ai:'Australia shows neutral sentiment. Stable commodity prices and steady monetary policy create a balanced outlook. Consumer resilience partially offsets global demand uncertainty.'},
+  250:{name:'France',score:0.17,sig:'NEUT',sector:'Luxury / Industry',trend:'→',headlines:['LVMH revenue growth moderates','French industrial output flat','ECB policy uncertainty lingers'],ai:'France is neutral. Luxury goods sector shows moderation after years of strong growth. Industrial output stagnation and ECB uncertainty keep sentiment balanced.'},
+  643:{name:'Russia',score:-0.88,sig:'BEAR',sector:'Energy / Sanctions',trend:'↓',headlines:['Western sanctions expand to new sectors','Ruble under pressure','Oil revenue constrained by price caps'],ai:'Russia shows deeply bearish sentiment. Expanded sanctions and oil price caps severely constrain economic activity. Geopolitical risk premium remains extremely elevated.'},
+  410:{name:'South Korea',score:0.55,sig:'BULL',sector:'Semiconductors',trend:'↑',headlines:['Samsung boosts chip capex by 40%','KOSPI rallies on AI chip demand','Memory chip prices recover sharply'],ai:'South Korea displays strong bullish signals from the semiconductor cycle recovery. Samsung and SK Hynix benefit directly from the global AI infrastructure buildout.'},
+};
+
+function getCountryColor(id){
+  const d=COUNTRY_DATA[id];
+  if(!d) return '#1a2535';
+  if(d.sig==='BULL') return d.score>0.6?'#006644':'#008855';
+  if(d.sig==='BEAR') return d.score<-0.6?'#991a1a':'#cc2222';
+  return '#665500';
+}
+
+// ── RENDER TICKER ──────────────────────────────────────────
+function renderTicker(){
+  const t=document.getElementById('ticker-track');
+  const all=[...STOCKS,{sym:'SPX',name:'S&P 500',price:5284.21,chg:18.43,chgP:0.35},{sym:'NDX',name:'Nasdaq',price:16742.39,chg:93.17,chgP:0.56},{sym:'BTC',name:'Bitcoin',price:62140,chg:840,chgP:1.37},{sym:'GLD',name:'Gold',price:2312.50,chg:-8.20,chgP:-0.35},{sym:'OIL',name:'Crude WTI',price:78.43,chg:0.92,chgP:1.19}];
+  const items=all.map(s=>`<span class="tick-item"><span class="tick-sym">${s.sym}</span><span class="tick-price">${s.price.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</span><span class="tick-chg ${s.chg>=0?'up':'dn'}">${s.chg>=0?'+':''}${s.chgP.toFixed(2)}%</span></span>`).join('');
+  t.innerHTML=items+items;
+}
+
+// ── RENDER WATCHLIST ───────────────────────────────────────
+let activeStock=STOCKS[0];
+function renderWatchlist(){
+  const el=document.getElementById('watchlist');
+  el.innerHTML=STOCKS.map((s,i)=>`
+  <div class="watch-item ${s===activeStock?'active':''}" onclick="selectStock(${i})">
+    <div style="display:flex;justify-content:space-between">
+      <span class="w-sym">${s.sym}</span>
+      <span class="w-price ${s.chg>=0?'bull':'bear'}">$${s.price.toFixed(2)}</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;margin-top:2px">
+      <span class="w-name">${s.name.substring(0,14)}</span>
+      <span class="w-chg ${s.chg>=0?'bull':'bear'}">${s.chg>=0?'+':''}${s.chgP.toFixed(2)}%</span>
+    </div>
+  </div>`).join('');
+}
+
+// ── RENDER INDICES ─────────────────────────────────────────
+function renderIndices(){
+  document.getElementById('indices').innerHTML=INDICES.map(idx=>`
+  <div class="idx-card">
+    <div class="idx-name">${idx.name}</div>
+    <div class="idx-val ${idx.dir>=0?'bull':'bear'}">${idx.val}</div>
+    <div class="idx-chg ${idx.dir>=0?'bull':'bear'}">${idx.chg} (${idx.chgP})</div>
+  </div>`).join('');
+}
+
+// ── RENDER STOCK DETAIL ────────────────────────────────────
+let sparkChart=null;
+function renderStockDetail(s){
+  document.getElementById('stock-detail').innerHTML=`
+  <div class="stock-info">
+    <div style="display:flex;align-items:baseline;gap:8px">
+      <span class="stock-sym">${s.sym}</span>
+      <span class="stock-name">${s.name}</span>
+      </div>
+      <div class="stock-price ${s.chg>=0?'bull':'bear'}">$${s.price.toFixed(2)}</div>
+      <div class="stock-meta">
+        <span>CHG: <b class="${s.chg>=0?'bull':'bear'}">${s.chg>=0?'+':''}${s.chg.toFixed(2)} (${s.chg>=0?'+':''}${s.chgP.toFixed(2)}%)</b></span>
+        <span>VOL: ${s.vol}</span>
+        <span>P/E: ${s.pe}</span>
+      </div>
+    </div>`;
+    renderSparkChart(s);
+    renderAIPanel(s);
+  }
+  
+  function renderSparkChart(s){
+  const ctx=document.getElementById('sparkChart');
+  if(sparkChart){sparkChart.destroy();sparkChart=null;}
+  const base=s.price;
+  const pts=[];
+  let v=base*(1-(Math.random()*.03+.01));
+  for(let i=0;i<78;i++){v+=v*(Math.random()-.48)*.008;pts.push(+v.toFixed(2));}
+  pts.push(base);
+  const labels=pts.map((_,i)=>{const h=Math.floor(9+i*7/78);const m=Math.floor((i*7*60/78)%60);return`${h}:${m.toString().padStart(2,'0')}`});
+  const col=s.chg>=0?'#00ff9c':'#ff4d4f';
+  sparkChart=new Chart(ctx,{
+    type:'line',
+    data:{labels,datasets:[{data:pts,borderColor:col,borderWidth:1.5,pointRadius:0,fill:true,backgroundColor:col+'18',tension:.3}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{mode:'index',intersect:false,callbacks:{label:c=>`$${c.raw.toFixed(2)}`}}},scales:{x:{display:false},y:{display:true,grid:{color:'#1e2d3d'},ticks:{color:'#5a7a94',font:{size:9},callback:v=>'$'+v.toFixed(0)}}}}
+  });
+}
+
+function renderAIPanel(s){
+  const isBull=s.sig==='BULL',isNeut=s.sig==='NEUT';
+  const col=isBull?'var(--bull)':isNeut?'var(--neut)':'var(--bear)';
+  const horizon=`${s.days}-day horizon`;
+  const upside=((s.target-s.price)/s.price*100).toFixed(1);
+  document.getElementById('ai-panel').innerHTML=`
+  <div class="signal-card">
+    <div class="signal-label">AI Signal</div>
+    <div class="signal-val" style="color:${col}">${s.sig==='BULL'?'▲ BULLISH':s.sig==='BEAR'?'▼ BEARISH':'● NEUTRAL'}</div>
+    <div class="conf-bar-wrap"><div class="conf-bar" style="width:${s.conf}%;background:${col}"></div></div>
+    <div style="font-size:9px;color:var(--muted);margin-top:3px">Confidence: ${s.conf}%</div>
+  </div>
+  <div class="signal-card">
+    <div class="signal-label">Target Price</div>
+    <div class="signal-val" style="color:${col}">$${s.target}</div>
+    <div style="font-size:9px;color:var(--muted);margin-top:3px">${upside>0?'+':''}${upside}% · ${horizon}</div>
+  </div>`;
+  
+  const explains={
+    AAPL:`News sentiment strongly positive (+0.74). Earnings whispers above consensus. Technical breakout above 200-day MA. Reddit/social volume: +34% WoW. Vision Pro pipeline is a fresh catalyst.`,
+    TSLA:`Bearish signal driven by price cut pressure in EU markets and margin concerns. Short interest elevated at 3.4% float. Sentiment score: -0.62. Delivery guidance at risk.`,
+    NVDA:`Dominant bullish signal. Earnings beat of 28% far exceeds expectations. Data center at $22B is 15% above estimates. AI infrastructure mega-cycle sustains premium valuation.`,
+    MSFT:`Bullish on Copilot enterprise adoption doubling. Azure AI workloads are incremental ARR of $12B. Cloud margin expansion reinforces high-confidence signal.`,
+    AMZN:`Neutral. AWS growth deceleration (17% YoY vs 21% expected) tempers upside. Cloud margin expansion partially offsets. Mixed signals warrant a hold posture.`,
+    META:`Strong bullish. AI assistant user base at 500M signals advertising revenue acceleration. Efficiency ratio improving. Options flow unusually bullish this week.`,
+    GOOGL:`Bullish. Search market share recovery to 90.2% removes a key risk. Gemini integration driving engagement metrics. Valuation remains attractive at 24.8x earnings.`,
+    JPM:`Bearish. Fed rate hold for longer compresses NIM expansion timeline. Financial sector faces headwinds into Q3. Credit card delinquency data also ticking up.`,
+  };
+  document.getElementById('ai-explain-box').innerHTML=`<strong>AI Reasoning Engine — ${s.sym}</strong>${explains[s.sym]||'Analyzing sentiment signals across news and social media...'}`;
+}
+
+// ── RENDER NEWS ────────────────────────────────────────────
+function renderNews(){
+  document.getElementById('news-feed').innerHTML=NEWS.map(n=>`
+    <div class="news-item">
+      <div class="news-src"><span>${n.src}</span><span>${n.time}</span></div>
+      <div class="news-title">${n.title}</div>
+      <div class="news-tags">
+        <span class="tag tag-ticker">${n.ticker}</span>
+        <span class="tag tag-${n.sent==='BULL'?'bull':n.sent==='BEAR'?'bear':'neut'}">${n.sent}</span>
+        <span style="font-size:8px;color:var(--muted);margin-left:auto">Impact: ${(n.impact*10).toFixed(1)}</span>
+      </div>
+      <div class="impact-bar" style="width:${(n.impact*100).toFixed(0)}%;background:${n.sent==='BULL'?'var(--bull)':n.sent==='BEAR'?'var(--bear)':'var(--neut)'}"></div>
+    </div>`).join('');
+  }
+  
+  // ── RENDER CORRELATION ─────────────────────────────────────
+  function renderCorrelation(){
+    document.getElementById('correlation').innerHTML=CORR.map(c=>{
+      const abs=Math.abs(c.score);
+      const col=c.dir>=0?'var(--bull)':'var(--bear)';
+      return`<div class="corr-item">
+        <span class="corr-sym">${c.sym}</span>
+        <div class="corr-bar-wrap"><div class="corr-bar" style="width:${(abs*100).toFixed(0)}%;background:${col}"></div></div>
+        <span class="corr-val" style="color:${col}">${c.score>0?'+':''}${c.score.toFixed(2)}</span>
+        <span class="corr-mentions">${(c.mentions/1000).toFixed(1)}K ments</span>
+      </div>`;}).join('');
+    }
+    
+    // ── SELECT STOCK ───────────────────────────────────────────
+    function selectStock(i){
+      activeStock=STOCKS[i];
+      renderWatchlist();
+      renderStockDetail(activeStock);
+    }
+    
+    // ── ADD TICKER ─────────────────────────────────────────────
+    function addTicker(){
+      const sym=prompt('Enter ticker symbol:');
+      if(!sym) return;
+      STOCKS.push({sym:sym.toUpperCase(),name:'Custom',price:+(100+Math.random()*400).toFixed(2),chg:+(Math.random()*10-5).toFixed(2),chgP:+(Math.random()*5-2.5).toFixed(2),sig:['BULL','BEAR','NEUT'][Math.floor(Math.random()*3)],conf:40+Math.floor(Math.random()*50),target:100+Math.floor(Math.random()*400),days:5,vol:'5.2M',pe:'22.1'});
+  renderWatchlist();
+}
+
+// ── FILTER ─────────────────────────────────────────────────
+function setFilter(f,btn){
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// ── WORLD MAP ──────────────────────────────────────────────
+const mapEl=document.getElementById('world-map');
+const mapSvg=d3.select(mapEl).append('svg').attr('viewBox','0 0 960 500').attr('preserveAspectRatio','xMidYMid meet');
+const projection=d3.geoNaturalEarth1().scale(153).translate([480,250]);
+const pathGen=d3.geoPath(projection);
+
+const tooltip=document.createElement('div');
+tooltip.style.cssText='position:absolute;background:#0b1520;border:1px solid #00ff9c;padding:5px 8px;font-size:9px;color:#c8d8e8;pointer-events:none;display:none;z-index:100;font-family:IBM Plex Mono,monospace;max-width:160px;line-height:1.5';
+mapEl.style.position='relative';
+mapEl.appendChild(tooltip);
+
+d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json').then(world=>{
+  const features=topojson.feature(world,world.objects.countries).features;
+  mapSvg.selectAll('path').data(features).join('path')
+  .attr('d',pathGen)
+  .attr('fill',d=>getCountryColor(+d.id))
+  .attr('stroke','#1e2d3d')
+  .attr('stroke-width',0.5)
+  .style('cursor',d=>COUNTRY_DATA[+d.id]?'pointer':'default')
+  .on('mousemove',(event,d)=>{
+    const cd=COUNTRY_DATA[+d.id];
+    if(!cd) return;
+    const col=cd.sig==='BULL'?'#00ff9c':cd.sig==='BEAR'?'#ff4d4f':'#f5c842';
+    tooltip.style.display='block';
+    tooltip.style.left=(event.offsetX+10)+'px';
+    tooltip.style.top=(event.offsetY-20)+'px';
+    tooltip.innerHTML=`<b style="color:${col}">${cd.name}</b><br>Signal: <span style="color:${col}">${cd.sig}</span> · Score: ${cd.score.toFixed(2)}<br>Sector: ${cd.sector}`;
+  })
+  .on('mouseleave',()=>{tooltip.style.display='none'})
+  .on('click',(event,d)=>{
+    const cd=COUNTRY_DATA[+d.id];
+    if(!cd) return;
+    showCountry(cd);
+  });
+  
+  // Legend
+  const lg=mapSvg.append('g').attr('transform','translate(10,460)');
+  [{c:'#008855',l:'Bullish'},{c:'#cc2222',l:'Bearish'},{c:'#665500',l:'Neutral'},{c:'#1a2535',l:'Low Data'}].forEach((item,i)=>{
+    lg.append('rect').attr('x',i*72).attr('y',0).attr('width',10).attr('height',10).attr('fill',item.c);
+    lg.append('text').attr('x',i*72+13).attr('y',9).attr('fill','#5a7a94').attr('font-size','9').attr('font-family','IBM Plex Mono').text(item.l);
+  });
+}).catch(()=>{
+  mapSvg.append('text').attr('x',480).attr('y',250).attr('text-anchor','middle').attr('fill','#5a7a94').attr('font-size','12').text('Map loading...');
+});
+
+function showCountry(cd){
+  const col=cd.sig==='BULL'?'var(--bull)':cd.sig==='BEAR'?'var(--bear)':'var(--neut)';
+  document.getElementById('cp-name').textContent=cd.name;
+  document.getElementById('cp-score').innerHTML=`<span style="color:${col}">${cd.score.toFixed(2)}</span>`;
+  document.getElementById('cp-signal').innerHTML=`<span style="color:${col}">${cd.sig}</span>`;
+  document.getElementById('cp-sector').textContent=cd.sector;
+  document.getElementById('cp-trend').innerHTML=`<span style="color:${col}">${cd.trend}</span>`;
+  document.getElementById('cp-headlines').innerHTML='<b style="color:#5a7a94;font-size:9px">KEY HEADLINES</b><br>'+cd.headlines.map(h=>`· ${h}`).join('<br>');
+  document.getElementById('cp-ai').innerHTML=`<span style="color:#5a7a94;font-size:9px">AI SUMMARY</span><br>${cd.ai}`;
+  document.getElementById('country-panel').classList.add('visible');
+  document.getElementById('country-panel').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function closeCountry(){
+  document.getElementById('country-panel').classList.remove('visible');
+}
+
+// ── CLOCK ──────────────────────────────────────────────────
+function updateClock(){
+  const now=new Date();
+  document.getElementById('clock').textContent=`NY ${now.toLocaleTimeString('en-US',{hour12:false,timeZone:'America/New_York'})} · LON ${now.toLocaleTimeString('en-GB',{hour12:false,timeZone:'Europe/London'})}`;
+}
+setInterval(updateClock,1000);
+updateClock();
+
+// ── LIVE PRICE JITTER ─────────────────────────────────────
+setInterval(()=>{
+  STOCKS.forEach(s=>{
+    const delta=s.price*(Math.random()-.499)*.002;
+    s.price=+(s.price+delta).toFixed(2);
+    s.chg=+(s.chg+delta*.1).toFixed(2);
+    s.chgP=+(s.chgP+delta*.01).toFixed(2);
+  });
+  renderWatchlist();
+  if(activeStock) renderStockDetail(activeStock);
+},4000);
+
+// ── INIT ───────────────────────────────────────────────────
+renderTicker();
+renderWatchlist();
+renderIndices();
+renderStockDetail(activeStock);
+renderNews();
+renderCorrelation();
+</script>
+
+
+</body>
+</html>
