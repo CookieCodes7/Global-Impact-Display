@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'wouter';
 import { useAuth } from '../context/AuthContext';
+import GlobeGL from '../components/GlobeGL';
 
 /* ─────────────────────────────────────────────────────── */
 /*  CONSTANTS                                              */
@@ -29,224 +30,11 @@ const FEATURES = [
 ];
 
 const STATS = [
-  { value: '4',    label: 'Global Markets', sub: 'IN · US · CN · JP' },
-  { value: '1000+', label: 'Instruments',   sub: 'Stocks & indices'   },
-  { value: 'GPT',  label: 'AI Powered',     sub: 'Signal engine'      },
-  { value: 'Live', label: 'Real-Time',      sub: 'Sub-second data'    },
+  { value: '4',     label: 'Global Markets', sub: 'IN · US · CN · JP' },
+  { value: '1000+', label: 'Instruments',    sub: 'Stocks & indices'   },
+  { value: 'GPT',   label: 'AI Powered',     sub: 'Signal engine'      },
+  { value: 'Live',  label: 'Real-Time',      sub: 'Sub-second data'    },
 ];
-
-/* ─────────────────────────────────────────────────────── */
-/*  GLOBE CANVAS                                           */
-/* ─────────────────────────────────────────────────────── */
-
-function isApproxLand(lat: number, lng: number): boolean {
-  // North America
-  if (lat > 15 && lat < 75 && lng > -165 && lng < -52) {
-    if (lat < 25 && lng < -90) return false;
-    if (lat > 50 && lat < 63 && lng > -90 && lng < -65) return false;
-    return true;
-  }
-  // South America
-  if (lat > -55 && lat < 13 && lng > -82 && lng < -34) {
-    if (lat < -15 && lng > -48) return false;
-    return true;
-  }
-  // Europe
-  if (lat > 35 && lat < 72 && lng > -12 && lng < 42) return true;
-  // Africa
-  if (lat > -35 && lat < 38 && lng > -18 && lng < 52) {
-    if (lat > 30 && lng > 36) return false;
-    return true;
-  }
-  // Middle East
-  if (lat > 12 && lat < 42 && lng > 35 && lng < 62) return true;
-  // India / South Asia
-  if (lat > 5 && lat < 38 && lng > 60 && lng < 98) return true;
-  // Asia mainland
-  if (lat > 18 && lat < 78 && lng > 65 && lng < 150) return true;
-  // SE Asia islands (Sumatra/Java/Borneo)
-  if (lat > -8 && lat < 7 && lng > 95 && lng < 118) return true;
-  // Japan
-  if (lat > 30 && lat < 46 && lng > 129 && lng < 146) return true;
-  // Australia
-  if (lat > -43 && lat < -10 && lng > 113 && lng < 155) return true;
-  // Greenland
-  if (lat > 60 && lat < 84 && lng > -74 && lng < -10) return true;
-  // Iceland
-  if (lat > 63 && lat < 67 && lng > -25 && lng < -13) return true;
-  // Antarctica
-  if (lat < -65) return true;
-  return false;
-}
-
-// Pre-compute dots at module level (runs once)
-const GLOBE_DOTS: [number, number][] = (() => {
-  const dots: [number, number][] = [];
-  const step = 4;
-  for (let lat = -80; lat <= 80; lat += step) {
-    for (let lng = -180; lng < 180; lng += step) {
-      if (isApproxLand(lat, lng)) {
-        dots.push([lat * Math.PI / 180, lng * Math.PI / 180]);
-      }
-    }
-  }
-  return dots;
-})();
-
-// Label positions (lat, lng in degrees, label)
-const GLOBE_LABELS: [number, number, string][] = [
-  [22, 79, 'INDIA'],
-  [40, -100, 'USA'],
-  [35, 105, 'CHINA'],
-  [52, 10, 'EU'],
-];
-
-function GlobeCanvas({ size = 420 }: { size?: number }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const animRef = useRef<number>(0);
-  const rotRef = useRef(0);
-
-  const draw = useCallback(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const W = canvas.width;
-    const H = canvas.height;
-    const R = Math.min(W, H) * 0.43;
-    const cx = W / 2;
-    const cy = H / 2;
-    const rot = rotRef.current;
-
-    ctx.clearRect(0, 0, W, H);
-
-    // Sphere fill
-    const sph = ctx.createRadialGradient(cx - R * 0.25, cy - R * 0.25, R * 0.05, cx, cy, R);
-    sph.addColorStop(0, 'rgba(0,80,120,0.55)');
-    sph.addColorStop(0.5, 'rgba(0,30,60,0.4)');
-    sph.addColorStop(1, 'rgba(0,10,25,0.15)');
-    ctx.beginPath();
-    ctx.arc(cx, cy, R, 0, Math.PI * 2);
-    ctx.fillStyle = sph;
-    ctx.fill();
-
-    // Subtle sphere outline
-    ctx.beginPath();
-    ctx.arc(cx, cy, R, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(0,220,200,0.18)';
-    ctx.lineWidth = 1;
-    ctx.stroke();
-
-    // Grid lines (lat)
-    for (let lat = -60; lat <= 60; lat += 30) {
-      const latR = lat * Math.PI / 180;
-      const ry = Math.sin(latR) * R;
-      const rx = Math.cos(latR) * R;
-      ctx.beginPath();
-      ctx.ellipse(cx, cy + ry, rx, rx * 0.08, 0, 0, Math.PI * 2);
-      ctx.strokeStyle = 'rgba(0,200,180,0.07)';
-      ctx.lineWidth = 0.5;
-      ctx.stroke();
-    }
-
-    // Grid lines (lng)
-    for (let lngDeg = 0; lngDeg < 360; lngDeg += 30) {
-      const lngR = (lngDeg + rot * 180 / Math.PI) * Math.PI / 180;
-      const x3 = Math.sin(lngR);
-      const z3 = Math.cos(lngR);
-      if (z3 < 0) continue;
-      const startAngle = -Math.PI / 2;
-      const endAngle = Math.PI / 2;
-      ctx.beginPath();
-      for (let a = startAngle; a <= endAngle; a += 0.05) {
-        const px = cx + Math.cos(a) * x3 * R;
-        const py = cy - Math.sin(a) * R;
-        if (a === startAngle) ctx.moveTo(px, py);
-        else ctx.lineTo(px, py);
-      }
-      ctx.strokeStyle = 'rgba(0,200,180,0.06)';
-      ctx.lineWidth = 0.5;
-      ctx.stroke();
-    }
-
-    // World dots
-    for (const [latR, lngR] of GLOBE_DOTS) {
-      const adjLng = lngR + rot;
-      const x3 = Math.cos(latR) * Math.sin(adjLng);
-      const y3 = Math.sin(latR);
-      const z3 = Math.cos(latR) * Math.cos(adjLng);
-      if (z3 < 0) continue;
-
-      const px = cx + x3 * R;
-      const py = cy - y3 * R;
-      const bright = 0.25 + z3 * 0.75;
-      const dotR = 1.0 + z3 * 1.1;
-
-      ctx.beginPath();
-      ctx.arc(px, py, dotR, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(0,220,180,${bright})`;
-      ctx.fill();
-    }
-
-    // Country labels
-    for (const [latDeg, lngDeg, label] of GLOBE_LABELS) {
-      const latR = latDeg * Math.PI / 180;
-      const lngR = lngDeg * Math.PI / 180;
-      const adjLng = lngR + rot;
-      const x3 = Math.cos(latR) * Math.sin(adjLng);
-      const y3 = Math.sin(latR);
-      const z3 = Math.cos(latR) * Math.cos(adjLng);
-      if (z3 < 0.2) continue;
-      const px = cx + x3 * R;
-      const py = cy - y3 * R;
-      ctx.font = `bold ${9 + z3 * 3}px "IBM Plex Mono", monospace`;
-      ctx.fillStyle = `rgba(180,240,230,${0.5 + z3 * 0.4})`;
-      ctx.textAlign = 'center';
-      ctx.fillText(label, px, py);
-    }
-
-    // Highlight dot (India)
-    {
-      const latR = 22 * Math.PI / 180;
-      const lngR = 79 * Math.PI / 180;
-      const adjLng = lngR + rot;
-      const z3 = Math.cos(latR) * Math.cos(adjLng);
-      if (z3 > 0.15) {
-        const x3 = Math.cos(latR) * Math.sin(adjLng);
-        const y3 = Math.sin(latR);
-        const px = cx + x3 * R;
-        const py = cy - y3 * R;
-        ctx.beginPath();
-        ctx.arc(px, py, 4, 0, Math.PI * 2);
-        ctx.fillStyle = '#00ff9c';
-        ctx.fill();
-        ctx.beginPath();
-        ctx.arc(px, py, 8, 0, Math.PI * 2);
-        ctx.strokeStyle = 'rgba(0,255,156,0.35)';
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-      }
-    }
-
-    rotRef.current += 0.003;
-    animRef.current = requestAnimationFrame(draw);
-  }, []);
-
-  useEffect(() => {
-    animRef.current = requestAnimationFrame(draw);
-    return () => cancelAnimationFrame(animRef.current);
-  }, [draw]);
-
-  return (
-    <canvas
-      ref={canvasRef}
-      width={size}
-      height={size}
-      style={{ display: 'block', borderRadius: '50%' }}
-    />
-  );
-}
 
 /* ─────────────────────────────────────────────────────── */
 /*  GLOBE SHOWCASE SECTION                                 */
@@ -254,6 +42,8 @@ function GlobeCanvas({ size = 420 }: { size?: number }) {
 
 function GlobeShowcase({ onSignup, onLogin }: { onSignup: () => void; onLogin: () => void }) {
   const [utcTime, setUtcTime] = useState('');
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [globeSize, setGlobeSize] = useState(480);
 
   useEffect(() => {
     const fmt = () => {
@@ -266,6 +56,18 @@ function GlobeShowcase({ onSignup, onLogin }: { onSignup: () => void; onLogin: (
     fmt();
     const id = setInterval(fmt, 1000);
     return () => clearInterval(id);
+  }, []);
+
+  // Measure globe area for responsive sizing
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const ro = new ResizeObserver(entries => {
+      const w = entries[0].contentRect.width;
+      const h = entries[0].contentRect.height;
+      setGlobeSize(Math.min(w, h, 520));
+    });
+    ro.observe(containerRef.current);
+    return () => ro.disconnect();
   }, []);
 
   const AI_SIGNALS = [
@@ -317,10 +119,11 @@ function GlobeShowcase({ onSignup, onLogin }: { onSignup: () => void; onLogin: (
         {/* Window body */}
         <div className="lp-globe-body">
           {/* Globe area */}
-          <div className="lp-globe-area">
-            {/* Glow ring */}
+          <div className="lp-globe-area" ref={containerRef}>
+            {/* Deep space background glow */}
             <div className="lp-globe-glow" />
-            <GlobeCanvas size={420} />
+
+            <GlobeGL width={globeSize} height={globeSize} />
 
             {/* AI Signals overlay */}
             <div className="lp-ai-panel">
@@ -397,10 +200,9 @@ function GlobeShowcase({ onSignup, onLogin }: { onSignup: () => void; onLogin: (
                 <path d="M0,50 C20,46 35,42 50,36 C65,30 75,32 90,24 C105,16 120,18 140,10 C155,4 170,8 200,3 L200,60 L0,60 Z" fill="url(#nvdaGrad)" />
                 <path d="M0,50 C20,46 35,42 50,36 C65,30 75,32 90,24 C105,16 120,18 140,10 C155,4 170,8 200,3" fill="none" stroke="#00ff9c" strokeWidth="1.5" />
               </svg>
-              {/* Volume bars */}
               <div className="lp-nvda-vol">
                 {Array.from({ length: 24 }, (_, i) => (
-                  <div key={i} className="lp-vol-bar" style={{ height: `${8 + Math.random() * 14}px` }} />
+                  <div key={i} className="lp-vol-bar" style={{ height: `${8 + (i * 7 + 11) % 14}px` }} />
                 ))}
               </div>
             </div>
