@@ -17,16 +17,20 @@ interface SparkChartProps {
   stock: Stock;
   currency?: string;
   yahooSym?: string;
+  /** Controlled mode — passed from parent. If omitted the component manages its own state. */
+  mode?: ChartMode;
 }
 
-export default function SparkChart({ stock, currency = '₹', yahooSym }: SparkChartProps) {
+export default function SparkChart({ stock, currency = '₹', yahooSym, mode: modeProp }: SparkChartProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  // candleContainerRef is ALWAYS in the DOM — never conditionally rendered
   const candleContainerRef = useRef<HTMLDivElement>(null);
   const chartJsRef = useRef<Chart | null>(null);
   const lwChartRef = useRef<IChartApi | null>(null);
   const rafRef = useRef<number | null>(null);
-  const [mode, setMode] = useState<ChartMode>('line');
+  // If parent controls mode, use that; otherwise fall back to internal state
+  const [modeInternal, setModeInternal] = useState<ChartMode>('line');
+  const mode = modeProp ?? modeInternal;
+
   const [candles, setCandles] = useState<Candle[]>([]);
   const [candleLoading, setCandleLoading] = useState(false);
 
@@ -111,22 +115,16 @@ export default function SparkChart({ stock, currency = '₹', yahooSym }: SparkC
 
   // ── lightweight-charts candlestick (candle mode) ───────────────────────────
   useEffect(() => {
-    // Cancel any pending rAF from a previous run
     if (rafRef.current !== null) { cancelAnimationFrame(rafRef.current); rafRef.current = null; }
-
     if (mode !== 'candle' || !candleContainerRef.current || candleLoading || candles.length === 0) return;
-
-    // Tear down existing chart first
     if (lwChartRef.current) { lwChartRef.current.remove(); lwChartRef.current = null; }
 
     const container = candleContainerRef.current;
 
-    // Defer to next paint so the container has been laid out and has real pixel dimensions
     rafRef.current = requestAnimationFrame(() => {
       rafRef.current = null;
       if (!container) return;
 
-      // getBoundingClientRect is more reliable than offsetWidth when display recently changed
       const width = Math.max(container.getBoundingClientRect().width || container.offsetWidth, 100);
 
       const chart = createChart(container, {
@@ -143,7 +141,6 @@ export default function SparkChart({ stock, currency = '₹', yahooSym }: SparkC
         },
         rightPriceScale: { borderColor: '#1a2533' },
         timeScale: { borderColor: '#1a2533', visible: false, fixLeftEdge: true, fixRightEdge: true },
-        // Use explicit pixel dimensions — never rely on offsetHeight which can be 0
         width,
         height: CHART_HEIGHT,
       });
@@ -183,8 +180,6 @@ export default function SparkChart({ stock, currency = '₹', yahooSym }: SparkC
         lwChartRef.current.applyOptions({ width: w, height: CHART_HEIGHT });
       });
       ro.observe(container);
-
-      // Store disconnect so cleanup can call it
       (chart as unknown as { _ro: ResizeObserver })._ro = ro;
     });
 
@@ -201,32 +196,6 @@ export default function SparkChart({ stock, currency = '₹', yahooSym }: SparkC
   return (
     <div className="chart-wrap" style={{ height: CHART_HEIGHT, position: 'relative', overflow: 'hidden' }}>
 
-      {/* Chart type toggle — top-right corner */}
-      <div style={{
-        position: 'absolute', top: 4, right: 4, zIndex: 10,
-        display: 'flex', border: '1px solid #1a2533', borderRadius: 2, overflow: 'hidden',
-      }}>
-        <button
-          onClick={() => setMode('line')}
-          style={{
-            fontFamily: 'IBM Plex Mono, monospace', fontSize: 8, fontWeight: 700,
-            padding: '2px 8px', cursor: 'pointer', border: 'none',
-            background: mode === 'line' ? col + '25' : 'transparent',
-            color: mode === 'line' ? col : '#3a5a74',
-          }}
-        >LINE</button>
-        <button
-          onClick={() => setMode('candle')}
-          style={{
-            fontFamily: 'IBM Plex Mono, monospace', fontSize: 8, fontWeight: 700,
-            padding: '2px 8px', cursor: 'pointer', border: 'none',
-            borderLeft: '1px solid #1a2533',
-            background: mode === 'candle' ? '#f5c24220' : 'transparent',
-            color: mode === 'candle' ? '#f5c242' : '#3a5a74',
-          }}
-        >CANDLE</button>
-      </div>
-
       {/* Line mode — Chart.js canvas, absolutely fills the wrap */}
       <canvas
         ref={canvasRef}
@@ -237,8 +206,7 @@ export default function SparkChart({ stock, currency = '₹', yahooSym }: SparkC
         }}
       />
 
-      {/* Candle container — ALWAYS in the DOM so layout dimensions are stable.
-          Visibility is toggled via display, never by conditional rendering. */}
+      {/* Candle container — ALWAYS in the DOM so layout dimensions are stable */}
       <div
         ref={candleContainerRef}
         style={{
@@ -247,7 +215,6 @@ export default function SparkChart({ stock, currency = '₹', yahooSym }: SparkC
         }}
       />
 
-      {/* Loading overlay */}
       {mode === 'candle' && candleLoading && (
         <div style={{
           position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -257,7 +224,6 @@ export default function SparkChart({ stock, currency = '₹', yahooSym }: SparkC
         </div>
       )}
 
-      {/* No symbol fallback */}
       {mode === 'candle' && !yahooSym && !candleLoading && (
         <div style={{
           position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
