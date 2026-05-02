@@ -556,7 +556,7 @@ export default function Terminal() {
             </div>
           </div>
 
-          <SparkChart stock={activeStock} currency={fxSym} />
+          <SparkChart stock={activeStock} currency={fxSym} yahooSym={watchlistSymbols[activeMarket]?.[activeStock.sym]} />
 
           {/* AI Panel */}
           <div className="ai-panel-row">

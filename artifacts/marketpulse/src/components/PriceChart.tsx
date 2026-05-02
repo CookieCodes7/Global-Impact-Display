@@ -1,18 +1,20 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { Chart, LineController, LineElement, PointElement, LinearScale, CategoryScale, Filler, Tooltip, TimeScale } from 'chart.js';
+import {
+  createChart, ColorType, UTCTimestamp, IChartApi,
+  CandlestickSeries, AreaSeries, HistogramSeries,
+} from 'lightweight-charts';
 
-Chart.register(LineController, LineElement, PointElement, LinearScale, CategoryScale, Filler, Tooltip);
-
-type Candle = { date: string; close: number; volume: number };
+type Candle = { date: string; open: number; high: number; low: number; close: number; volume: number };
+type ChartType = 'line' | 'candle';
 
 const PERIODS = [
-  { key: '1d',  label: '1D'  },
-  { key: '7d',  label: '7D'  },
-  { key: '1mo', label: '1M'  },
-  { key: '3mo', label: '3M'  },
-  { key: '6mo', label: '6M'  },
-  { key: '1y',  label: '1Y'  },
-  { key: '5y',  label: '5Y'  },
+  { key: '1d',  label: '1D' },
+  { key: '7d',  label: '7D' },
+  { key: '1mo', label: '1M' },
+  { key: '3mo', label: '3M' },
+  { key: '6mo', label: '6M' },
+  { key: '1y',  label: '1Y' },
+  { key: '5y',  label: '5Y' },
 ];
 
 interface PriceChartProps {
@@ -30,9 +32,10 @@ export default function PriceChart({
   yahooSym, currentPrice, currency, accentColor = '#3b9eff',
   height = 200, showPeriodSelector = true, defaultPeriod = '1mo',
 }: PriceChartProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const chartRef = useRef<Chart | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const chartRef = useRef<IChartApi | null>(null);
   const [period, setPeriod] = useState(defaultPeriod);
+  const [chartType, setChartType] = useState<ChartType>('line');
   const [loading, setLoading] = useState(true);
   const [candles, setCandles] = useState<Candle[]>([]);
   const [error, setError] = useState(false);
@@ -55,98 +58,109 @@ export default function PriceChart({
   useEffect(() => { fetchHistory(period); }, [period, fetchHistory]);
 
   useEffect(() => {
-    if (!canvasRef.current || loading || candles.length === 0) return;
-    if (chartRef.current) { chartRef.current.destroy(); chartRef.current = null; }
+    if (!containerRef.current || loading || candles.length === 0) return;
 
+    if (chartRef.current) { chartRef.current.remove(); chartRef.current = null; }
+
+    const container = containerRef.current;
     const closes = candles.map(c => c.close);
     const first = closes[0] ?? currentPrice;
     const last = closes[closes.length - 1] ?? currentPrice;
     const isUp = last >= first;
-    const col = isUp ? '#00ff9c' : '#ff4d4f';
+    const lineCol = isUp ? '#00ff9c' : '#ff4d4f';
+    const effectiveAccent = accentColor === '#3b9eff' ? lineCol : accentColor;
 
-    const labels = candles.map(c => {
-      const d = new Date(c.date);
-      if (period === '1d') return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-      if (period === '7d') return d.toLocaleDateString('en-US', { weekday: 'short', hour: '2-digit' });
-      if (period === '5y') return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
-      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const chart = createChart(container, {
+      layout: {
+        background: { type: ColorType.Solid, color: 'transparent' },
+        textColor: '#5a7a94',
+        fontFamily: 'IBM Plex Mono, monospace',
+        fontSize: 9,
+      },
+      grid: {
+        vertLines: { color: '#0f1922' },
+        horzLines: { color: '#1a2533' },
+      },
+      crosshair: {
+        vertLine: { color: '#3a5a74', labelBackgroundColor: '#0d1b2a' },
+        horzLine: { color: '#3a5a74', labelBackgroundColor: '#0d1b2a' },
+      },
+      rightPriceScale: { borderColor: '#1a2533' },
+      timeScale: {
+        borderColor: '#1a2533',
+        timeVisible: period === '1d' || period === '7d',
+        secondsVisible: false,
+        fixLeftEdge: true,
+        fixRightEdge: true,
+      },
+      width: container.offsetWidth,
+      height,
     });
 
-    const pctChange = first ? ((last - first) / first * 100).toFixed(2) : '0.00';
+    chartRef.current = chart;
+    const toTime = (d: string) => (new Date(d).getTime() / 1000) as UTCTimestamp;
 
-    chartRef.current = new Chart(canvasRef.current, {
-      type: 'line',
-      data: {
-        labels,
-        datasets: [{
-          data: closes,
-          borderColor: col,
-          borderWidth: 1.5,
-          pointRadius: 0,
-          fill: true,
-          backgroundColor: col + '1a',
-          tension: 0.2,
-        }],
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        interaction: { mode: 'index', intersect: false },
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            backgroundColor: '#0b1520',
-            borderColor: col,
-            borderWidth: 1,
-            titleColor: '#5a7a94',
-            bodyColor: '#c8d8e8',
-            callbacks: {
-              label: (c) => ` ${currency}${(c.raw as number).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-              title: (items) => items[0]?.label ?? '',
-            },
-          },
-          // @ts-ignore - custom plugin for pct change label
-          pctLabel: {
-            afterDraw(chart: Chart) {
-              const ctx = chart.ctx;
-              ctx.save();
-              ctx.font = '10px IBM Plex Mono, monospace';
-              ctx.fillStyle = col;
-              ctx.textAlign = 'right';
-              ctx.fillText(`${isUp ? '+' : ''}${pctChange}%  period chg`, chart.width - 8, 14);
-              ctx.restore();
-            }
-          }
-        },
-        scales: {
-          x: {
-            display: true,
-            grid: { color: '#0f1922' },
-            ticks: {
-              color: '#3a5a74', font: { size: 8, family: 'IBM Plex Mono' },
-              maxTicksLimit: 8, maxRotation: 0,
-            },
-          },
-          y: {
-            display: true,
-            position: 'right',
-            grid: { color: '#1a2533' },
-            ticks: {
-              color: '#5a7a94', font: { size: 9, family: 'IBM Plex Mono' },
-              callback: (v) => currency + Number(v).toLocaleString('en-US'),
-            },
-          },
-        },
-      },
+    if (chartType === 'candle') {
+      const candleSeries = chart.addSeries(CandlestickSeries, {
+        upColor: '#00ff9c',
+        downColor: '#ff4d4f',
+        borderUpColor: '#00ff9c',
+        borderDownColor: '#ff4d4f',
+        wickUpColor: '#00ff9c',
+        wickDownColor: '#ff4d4f',
+        priceScaleId: 'right',
+      });
+      candleSeries.setData(candles.map(c => ({
+        time: toTime(c.date),
+        open: c.open, high: c.high, low: c.low, close: c.close,
+      })));
+
+      const volSeries = chart.addSeries(HistogramSeries, {
+        color: '#2a3a4a',
+        priceFormat: { type: 'volume' },
+        priceScaleId: 'vol',
+      });
+      chart.priceScale('vol').applyOptions({ scaleMargins: { top: 0.85, bottom: 0 } });
+      chart.priceScale('right').applyOptions({ scaleMargins: { top: 0.02, bottom: 0.2 } });
+      volSeries.setData(candles.map(c => ({
+        time: toTime(c.date),
+        value: c.volume,
+        color: c.close >= c.open ? '#00ff9c22' : '#ff4d4f22',
+      })));
+    } else {
+      const areaSeries = chart.addSeries(AreaSeries, {
+        lineColor: effectiveAccent,
+        topColor: effectiveAccent + '25',
+        bottomColor: 'transparent',
+        lineWidth: 1.5,
+        crosshairMarkerVisible: true,
+        crosshairMarkerRadius: 3,
+        crosshairMarkerBackgroundColor: effectiveAccent,
+        priceFormat: { type: 'price', precision: 2, minMove: 0.01 },
+      });
+      areaSeries.setData(candles.map(c => ({ time: toTime(c.date), value: c.close })));
+    }
+
+    chart.timeScale().fitContent();
+
+    const ro = new ResizeObserver(() => {
+      if (container && chartRef.current) {
+        chartRef.current.applyOptions({ width: container.offsetWidth });
+      }
     });
+    ro.observe(container);
 
-    return () => { chartRef.current?.destroy(); chartRef.current = null; };
-  }, [candles, loading, period, currentPrice, currency]);
+    return () => {
+      ro.disconnect();
+      chartRef.current?.remove();
+      chartRef.current = null;
+    };
+  }, [candles, loading, chartType, period, currentPrice, accentColor, height]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
       {showPeriodSelector && (
-        <div style={{ display: 'flex', gap: 2, padding: '6px 8px', borderBottom: '1px solid var(--border)', background: 'var(--bg2)' }}>
+        <div style={{ display: 'flex', gap: 2, padding: '6px 8px', borderBottom: '1px solid var(--border)', background: 'var(--bg2)', alignItems: 'center', flexWrap: 'wrap' }}>
           {PERIODS.map(p => (
             <button
               key={p.key}
@@ -156,29 +170,54 @@ export default function PriceChart({
                 border: `1px solid ${period === p.key ? accentColor : 'transparent'}`,
                 color: period === p.key ? accentColor : 'var(--muted)',
                 fontFamily: "'IBM Plex Mono', monospace",
-                fontSize: 10,
-                padding: '2px 10px',
-                cursor: 'pointer',
-                borderRadius: 2,
-                fontWeight: period === p.key ? 600 : 400,
-                transition: 'all .1s',
+                fontSize: 10, padding: '2px 10px', cursor: 'pointer', borderRadius: 2,
+                fontWeight: period === p.key ? 600 : 400, transition: 'all .1s',
               }}
             >{p.label}</button>
           ))}
+
+          <div style={{ flex: 1 }} />
+
+          <div style={{ display: 'flex', gap: 0, border: '1px solid #1a2533', borderRadius: 2, overflow: 'hidden' }}>
+            <button
+              onClick={() => setChartType('line')}
+              title="Line chart"
+              style={{
+                fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, fontWeight: 700,
+                padding: '2px 10px', cursor: 'pointer', border: 'none',
+                background: chartType === 'line' ? '#3b9eff20' : 'transparent',
+                color: chartType === 'line' ? '#3b9eff' : '#3a5a74',
+                transition: 'all .1s',
+              }}
+            >╱ LINE</button>
+            <button
+              onClick={() => setChartType('candle')}
+              title="Candlestick chart"
+              style={{
+                fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, fontWeight: 700,
+                padding: '2px 10px', cursor: 'pointer', border: 'none',
+                borderLeft: '1px solid #1a2533',
+                background: chartType === 'candle' ? '#f5c24220' : 'transparent',
+                color: chartType === 'candle' ? '#f5c242' : '#3a5a74',
+                transition: 'all .1s',
+              }}
+            >🕯 CANDLE</button>
+          </div>
         </div>
       )}
+
       <div style={{ height, position: 'relative', background: 'var(--bg)' }}>
         {loading && (
-          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--muted)', fontSize: 10, fontFamily: 'IBM Plex Mono' }}>
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--muted)', fontSize: 10, fontFamily: 'IBM Plex Mono', zIndex: 2 }}>
             Loading chart data...
           </div>
         )}
         {error && !loading && (
-          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--bear)', fontSize: 10, fontFamily: 'IBM Plex Mono' }}>
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--bear)', fontSize: 10, fontFamily: 'IBM Plex Mono', zIndex: 2 }}>
             Chart data unavailable
           </div>
         )}
-        <canvas ref={canvasRef} style={{ width: '100%', height: '100%', display: loading ? 'none' : 'block' }} />
+        <div ref={containerRef} style={{ width: '100%', height: '100%', display: loading ? 'none' : 'block' }} />
       </div>
     </div>
   );

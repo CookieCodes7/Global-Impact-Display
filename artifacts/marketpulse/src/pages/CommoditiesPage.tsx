@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'wouter';
 import Clock from '../components/Clock';
+import PriceChart from '../components/PriceChart';
 
 interface LiveQuote {
   price: number | null;
@@ -321,6 +322,19 @@ export default function CommoditiesPage() {
                   <p style={{ fontSize: 10, color: 'var(--text)', lineHeight: 1.7, margin: 0, fontFamily: 'var(--sans)' }}>
                     {selected.aiNote}
                   </p>
+                </div>
+
+                {/* Price chart with candle toggle */}
+                <div style={{ margin: '12px -4px 0', border: '1px solid var(--border)', borderRadius: 2, overflow: 'hidden' }}>
+                  <PriceChart
+                    yahooSym={selected.yahoo}
+                    currentPrice={price ?? 0}
+                    currency={isINR ? '₹' : '$'}
+                    accentColor="#f5c242"
+                    height={180}
+                    showPeriodSelector={true}
+                    defaultPeriod="1mo"
+                  />
                 </div>
 
                 {/* Full chart link */}
