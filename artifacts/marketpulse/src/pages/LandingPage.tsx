@@ -36,6 +36,25 @@ const STATS = [
   { value: 'Live',  label: 'Real-Time',      sub: 'Sub-second data'    },
 ];
 
+const PREVIEW_WL = [
+  { sym: 'NVDA', price: '$485.09', chg: '+3.45%', up: true,  pts: '0,30 12,27 24,22 36,18 48,13 60,8 72,2' },
+  { sym: 'AAPL', price: '$188.32', chg: '-0.41%', up: false, pts: '0,2 12,5 24,4 36,10 48,14 60,16 72,20' },
+  { sym: 'TSLA', price: '$240.11', chg: '-0.84%', up: false, pts: '0,2 12,6 24,5 36,12 48,15 60,18 72,24' },
+  { sym: 'META', price: '$492.17', chg: '+1.22%', up: true,  pts: '0,28 12,24 24,20 36,16 48,12 60,7 72,3' },
+];
+
+const INTEL_FEED = [
+  { time: '14:23', text: 'NVDA unusual options 950C × 2,400', cls: '' },
+  { time: '14:22', text: 'BUY SIGNAL: META (Conf 85%)',        cls: 'buy' },
+  { time: '14:21', text: 'Macro: Fed statement imminent',      cls: '' },
+  { time: '14:20', text: 'SELL SIGNAL: JPM (Conf 62%)',        cls: 'sell' },
+  { time: '14:18', text: 'Dark pool block: AAPL $28.4M',       cls: '' },
+  { time: '14:17', text: 'SEC Filing: TSLA Form 8-K',          cls: '' },
+  { time: '14:15', text: 'BUY SIGNAL: NVDA (Conf 91%)',        cls: 'buy' },
+];
+
+const VOL_BARS = [14,18,12,22,16,28,20,32,24,28,36,30,38,34,42,38,46,40,44,48];
+
 /* ─────────────────────────────────────────────────────── */
 /*  GLOBE SHOWCASE SECTION                                 */
 /* ─────────────────────────────────────────────────────── */
@@ -190,6 +209,134 @@ function GlobeShowcase({ onSignup, onLogin }: { onSignup: () => void; onLogin: (
               </div>
             </div>
           </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ─────────────────────────────────────────────────────── */
+/*  TERMINAL PREVIEW SECTION                               */
+/* ─────────────────────────────────────────────────────── */
+
+function TerminalPreview() {
+  const [utcTime, setUtcTime] = useState('');
+  useEffect(() => {
+    const fmt = () => {
+      const n = new Date();
+      const h = String(n.getUTCHours()).padStart(2,'0');
+      const m = String(n.getUTCMinutes()).padStart(2,'0');
+      const s = String(n.getUTCSeconds()).padStart(2,'0');
+      setUtcTime(`${h}:${m}:${s}`);
+    };
+    fmt(); const id = setInterval(fmt, 1000); return () => clearInterval(id);
+  }, []);
+
+  return (
+    <section className="lp-preview-section">
+      <span className="lp-preview-badge">LIVE PREVIEW</span>
+      <h2 className="lp-preview-title">Command the markets.</h2>
+      <p className="lp-preview-sub">No wasted pixels. Maximum signal density.</p>
+
+      <div className="lp-tw-window">
+        {/* Title bar */}
+        <div className="lp-tw-bar">
+          <div className="lp-tw-dots">
+            <span style={{ background: '#ff5f57' }} />
+            <span style={{ background: '#febc2e' }} />
+            <span style={{ background: '#28c840' }} />
+          </div>
+          <span className="lp-tw-bar-title">marketpulse-terminal v2.4 · {utcTime}</span>
+        </div>
+
+        {/* Three-column body */}
+        <div className="lp-tw-body">
+
+          {/* LEFT — Watchlist */}
+          <div className="lp-tw-wl">
+            <div className="lp-tw-panel-hdr">WATCHLIST</div>
+            {PREVIEW_WL.map(s => (
+              <div key={s.sym} className="lp-tw-wl-row">
+                <div className="lp-tw-wl-info">
+                  <div className="lp-tw-wl-sym">{s.sym}</div>
+                  <div className="lp-tw-wl-price">{s.price}</div>
+                </div>
+                <svg className="lp-tw-spark" viewBox="0 0 72 32" preserveAspectRatio="none">
+                  <polyline points={s.pts} fill="none"
+                    stroke={s.up ? '#00ff9c' : '#ff4d4f'} strokeWidth="1.5" />
+                </svg>
+                <div className={`lp-tw-wl-chg ${s.up ? 'up' : 'dn'}`}>{s.chg}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* CENTER — Chart */}
+          <div className="lp-tw-chart">
+            <div className="lp-tw-chart-hdr">
+              <span className="lp-tw-sym-lbl">NVDA</span>
+              <span className="lp-tw-period-lbl">1D</span>
+              <span className="lp-tw-signal-buy">BUY</span>
+              <span className="lp-tw-chart-price">$485.09</span>
+              <span className="lp-tw-chart-chg up">+3.45%</span>
+            </div>
+            <div className="lp-tw-tabs">
+              {['1D','5D','1M','3M','1Y'].map(t => (
+                <span key={t} className={`lp-tw-tab${t==='1D'?' active':''}`}>{t}</span>
+              ))}
+              <span className="lp-tw-tab-sep" />
+              <span className="lp-tw-tab-info">MA ——</span>
+              <span className="lp-tw-tab-info">VOL</span>
+            </div>
+            <svg className="lp-tw-chart-svg" viewBox="0 0 500 190" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="nvda-fill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%"   stopColor="#00ff9c" stopOpacity="0.30" />
+                  <stop offset="100%" stopColor="#00ff9c" stopOpacity="0.01" />
+                </linearGradient>
+              </defs>
+              {[50,90,130,170].map(y => (
+                <line key={y} x1="30" y1={y} x2="480" y2={y}
+                  stroke="#1a2a3a" strokeWidth="0.6" />
+              ))}
+              <text x="26" y="53"  fill="#3a5a74" fontSize="9" textAnchor="end">463</text>
+              <text x="26" y="93"  fill="#3a5a74" fontSize="9" textAnchor="end">441</text>
+              <text x="26" y="133" fill="#3a5a74" fontSize="9" textAnchor="end">418</text>
+              {/* Filled area */}
+              <path d="M30,173 L75,164 L120,151 L165,142 L210,121 L255,105 L300,89 L345,74 L390,60 L435,46 L480,21 L480,180 L30,180 Z"
+                fill="url(#nvda-fill)" />
+              {/* MA dashed */}
+              <line x1="30" y1="168" x2="480" y2="28"
+                stroke="#3b9eff" strokeWidth="1" strokeDasharray="5,3" opacity="0.55" />
+              {/* Price line */}
+              <polyline
+                points="30,173 75,164 120,151 165,142 210,121 255,105 300,89 345,74 390,60 435,46 480,21"
+                fill="none" stroke="#00ff9c" strokeWidth="2" strokeLinejoin="round" />
+              <circle cx="480" cy="21" r="3.5" fill="#00ff9c" />
+              <circle cx="480" cy="21" r="6" fill="none" stroke="#00ff9c" strokeWidth="1" opacity="0.4" />
+            </svg>
+            <div className="lp-tw-vol">
+              {VOL_BARS.map((h, i) => (
+                <div key={i} className="lp-tw-vol-bar" style={{ height: h + 'px' }} />
+              ))}
+            </div>
+            <div className="lp-tw-time-axis">
+              {['9:30','10:00','10:30','11:00','11:30','12:00'].map(t => (
+                <span key={t}>{t}</span>
+              ))}
+            </div>
+          </div>
+
+          {/* RIGHT — Intel Feed */}
+          <div className="lp-tw-feed">
+            <div className="lp-tw-panel-hdr">INTEL FEED</div>
+            {INTEL_FEED.map((item, i) => (
+              <div key={i} className="lp-tw-feed-row">
+                <span className="lp-tw-feed-time">{item.time}</span>
+                <span className={`lp-tw-feed-text${item.cls ? ' '+item.cls : ''}`}>{item.text}</span>
+              </div>
+            ))}
+          </div>
+
         </div>
       </div>
     </section>
@@ -388,6 +535,9 @@ export default function LandingPage() {
           ))}
         </div>
       </section>
+
+      {/* Terminal Preview */}
+      <TerminalPreview />
 
       {/* CTA Banner */}
       <section className="lp-cta-section">
