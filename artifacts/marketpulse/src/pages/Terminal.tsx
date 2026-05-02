@@ -630,16 +630,24 @@ export default function Terminal() {
       <nav className="mp-mobile-nav">
         <button className={`mob-nav-btn${mobilePanel === 'watch' ? ' active' : ''}`} onClick={() => setMobilePanel('watch')}>
           <span className="mob-nav-icon">📋</span>
-          <span className="mob-nav-label">Watchlist</span>
+          <span className="mob-nav-label">Watch</span>
         </button>
         <button className={`mob-nav-btn${mobilePanel === 'chart' ? ' active' : ''}`} onClick={() => setMobilePanel('chart')}>
           <span className="mob-nav-icon">📈</span>
           <span className="mob-nav-label">Chart</span>
         </button>
         <button className={`mob-nav-btn${mobilePanel === 'info' ? ' active' : ''}`} onClick={() => setMobilePanel('info')}>
-          <span className="mob-nav-icon">📰</span>
-          <span className="mob-nav-label">News</span>
+          <span className="mob-nav-icon">📡</span>
+          <span className="mob-nav-label">Feed</span>
         </button>
+        <Link href="/portfolio" className="mob-nav-btn mob-nav-link">
+          <span className="mob-nav-icon">📊</span>
+          <span className="mob-nav-label">Portfolio</span>
+        </Link>
+        <Link href="/news" className="mob-nav-btn mob-nav-link">
+          <span className="mob-nav-icon">🗞️</span>
+          <span className="mob-nav-label">News</span>
+        </Link>
       </nav>
     </div>
   );
