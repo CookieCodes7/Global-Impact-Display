@@ -175,6 +175,7 @@ export default function PortfolioPage() {
       {/* Header */}
       <div className="port-header">
         <Link href="/" className="sp-back">← Terminal</Link>
+        <Link href="/news" className="sp-back" style={{ borderColor: '#a78bfa44', color: '#a78bfa' }}>📰 News</Link>
         <div className="port-hdr-divider" />
         <span className="port-title">📊 PORTFOLIO</span>
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 16 }}>

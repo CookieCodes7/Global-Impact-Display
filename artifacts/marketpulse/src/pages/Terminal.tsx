@@ -294,6 +294,9 @@ export default function Terminal() {
         <Link href="/portfolio" style={{ fontSize: 9, color: '#3b9eff', background: '#3b9eff18', border: '1px solid #3b9eff44', padding: '2px 10px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap', letterSpacing: 0.5 }}>
           📊 Portfolio
         </Link>
+        <Link href="/news" style={{ fontSize: 9, color: '#a78bfa', background: '#a78bfa18', border: '1px solid #a78bfa44', padding: '2px 10px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap', letterSpacing: 0.5 }}>
+          📰 News
+        </Link>
         <div style={{ fontSize: 9, color: accentCol, background: accentCol + '18', border: `1px solid ${accentCol}44`, padding: '2px 8px', letterSpacing: 1, textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
           {market.flag} {market.name} · {market.exchange}
         </div>

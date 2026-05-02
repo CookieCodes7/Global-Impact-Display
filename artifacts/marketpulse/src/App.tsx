@@ -3,6 +3,7 @@ import Terminal from "@/pages/Terminal";
 import MapPage from "@/pages/MapPage";
 import StockPage from "@/pages/StockPage";
 import PortfolioPage from "@/pages/PortfolioPage";
+import NewsPage from "@/pages/NewsPage";
 
 function Router() {
   return (
@@ -11,6 +12,7 @@ function Router() {
       <Route path="/map" component={MapPage} />
       <Route path="/stock/:symbol" component={StockPage} />
       <Route path="/portfolio" component={PortfolioPage} />
+      <Route path="/news" component={NewsPage} />
     </Switch>
   );
 }

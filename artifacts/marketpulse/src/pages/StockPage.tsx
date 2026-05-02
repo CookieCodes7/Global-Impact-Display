@@ -107,6 +107,7 @@ export default function StockPage() {
       <div className="sp-header">
         <Link href="/" className="sp-back">← Terminal</Link>
         <Link href="/portfolio" className="sp-back" style={{ borderColor: '#3b9eff44', color: '#3b9eff' }}>📊 Portfolio</Link>
+        <Link href="/news" className="sp-back" style={{ borderColor: '#a78bfa44', color: '#a78bfa' }}>📰 News</Link>
         <div className="sp-hdr-divider" />
         <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
