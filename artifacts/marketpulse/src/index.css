@@ -184,6 +184,49 @@ body {
 .mcp-ai-text { font-size: 10px; color: #9ab5c8; line-height: 1.7; }
 .map-tooltip { position: absolute; background: #0b1520; border: 1px solid var(--bull); padding: 6px 10px; font-size: 9px; color: var(--text); pointer-events: none; z-index: 100; font-family: 'IBM Plex Mono', monospace; max-width: 180px; line-height: 1.6; border-radius: 2px; }
 
+/* ── MAP PAGE: LIVE DATA ── */
+.mcp-sig-badge { font-size: 9px; font-weight: 600; padding: 2px 8px; letter-spacing: 0.5px; border-radius: 2px; }
+.mcp-live-loading { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 9px; color: var(--muted); }
+.mcp-spinner { width: 12px; height: 12px; border: 2px solid var(--dim); border-top-color: var(--bull); border-radius: 50%; animation: spin .7s linear infinite; flex-shrink: 0; }
+.mcp-primary-index { margin-top: 10px; padding: 10px 0 2px; border-top: 1px solid var(--border); }
+.mcp-primary-label { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 3px; }
+.mcp-primary-price { font-size: 20px; font-weight: 600; color: var(--text); letter-spacing: -0.5px; }
+.mcp-primary-chg { font-size: 11px; font-weight: 600; margin-top: 2px; }
+.mcp-primary-chg.bull { color: var(--bull); }
+.mcp-primary-chg.bear { color: var(--bear); }
+.mcp-perf-bar-wrap { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+.mcp-perf-bar-track { flex: 1; height: 4px; background: var(--dim); border-radius: 2px; overflow: hidden; }
+.mcp-perf-bar-fill { height: 4px; border-radius: 2px; transition: width .6s ease; }
+.mcp-perf-bar-label { font-size: 8px; color: var(--muted); white-space: nowrap; }
+.mcp-live-dot { font-size: 8px; color: var(--bull); animation: pulse-dot 2s ease-in-out infinite; }
+@keyframes pulse-dot { 0%,100% { opacity:1 } 50% { opacity:0.4 } }
+.mcp-indices-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
+.mcp-index-card { background: var(--bg3); border: 1px solid var(--border); padding: 8px 10px; border-radius: 2px; }
+.mcp-index-label { font-size: 8px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; }
+.mcp-index-price { font-size: 12px; font-weight: 600; color: var(--text); }
+.mcp-index-chg { font-size: 9px; font-weight: 600; margin-top: 2px; }
+.mcp-index-chg.bull { color: var(--bull); }
+.mcp-index-chg.bear { color: var(--bear); }
+.mcp-news-skeleton { height: 40px; background: var(--dim); border-radius: 2px; margin-bottom: 6px; animation: shimmer 1.4s ease-in-out infinite; }
+@keyframes shimmer { 0%,100% { opacity:.4 } 50% { opacity:.8 } }
+.mcp-news-item { display: block; padding: 8px 0; border-bottom: 1px solid var(--border); text-decoration: none; cursor: pointer; transition: background .15s; }
+.mcp-news-item:hover { background: var(--dim); margin: 0 -14px; padding: 8px 14px; }
+.mcp-news-item:last-child { border-bottom: none; }
+.mcp-news-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px; }
+.mcp-news-pub { font-size: 8px; color: var(--bull); text-transform: uppercase; letter-spacing: 0.5px; }
+.mcp-news-time { font-size: 8px; color: var(--muted); }
+.mcp-news-title { font-size: 10px; color: var(--text); line-height: 1.4; font-family: var(--sans); }
+.mcp-news-tickers { display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap; }
+.mcp-news-ticker { font-size: 8px; padding: 1px 5px; background: rgba(0,255,156,0.08); border: 1px solid rgba(0,255,156,0.2); color: var(--bull); border-radius: 2px; }
+/* Index strip overlay on map */
+.map-index-strip { position: absolute; bottom: 16px; right: 8px; display: flex; flex-direction: column; gap: 4px; }
+.map-index-strip-item { display: flex; gap: 8px; align-items: center; background: rgba(11,15,20,0.88); border: 1px solid var(--border); padding: 4px 10px; font-size: 9px; }
+.map-index-strip-label { color: var(--muted); min-width: 80px; }
+.map-index-strip-price { color: var(--text); font-weight: 600; min-width: 70px; text-align: right; }
+.map-index-strip-chg { font-weight: 600; min-width: 60px; text-align: right; }
+.map-index-strip-chg.bull { color: var(--bull); }
+.map-index-strip-chg.bear { color: var(--bear); }
+
 /* ── STOCK PAGE ── */
 .sp-page { display: flex; flex-direction: column; height: 100vh; overflow: hidden; background: var(--bg); }
 .sp-header { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 6px 14px; display: flex; align-items: center; gap: 10px; height: 50px; flex-shrink: 0; }

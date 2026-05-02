@@ -7,6 +7,7 @@ import analysisRouter from "./analysis";
 import newsRouter from "./news";
 import imgproxyRouter from "./imgproxy";
 import portfolioAnalysisRouter from "./portfolio-analysis";
+import mapCountryRouter from "./mapCountry";
 
 const router: IRouter = Router();
 
@@ -18,5 +19,6 @@ router.use(analysisRouter);
 router.use(newsRouter);
 router.use(imgproxyRouter);
 router.use(portfolioAnalysisRouter);
+router.use(mapCountryRouter);
 
 export default router;
