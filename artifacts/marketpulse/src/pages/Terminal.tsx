@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Link } from 'wouter';
+import { Link, useLocation } from 'wouter';
+import { useAuth } from '../context/AuthContext';
 import SparkChart from '../components/SparkChart';
 import WorldMap from '../components/WorldMap';
 import Clock from '../components/Clock';
@@ -44,6 +45,61 @@ function makeDefaultWatchlist(): Record<string, Record<string, string>> {
     result[mId] = { ...syms };
   }
   return result;
+}
+
+function UserBadge() {
+  const { user, logout } = useAuth();
+  const [, navigate] = useLocation();
+  const [open, setOpen] = useState(false);
+  if (!user) return null;
+  const handleLogout = () => { logout(); navigate('/landing'); };
+  return (
+    <div style={{ position: 'relative', marginLeft: 'auto', flexShrink: 0 }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 7, background: '#1c2530',
+          border: '1px solid #1e2d3d', borderRadius: 6, padding: '5px 10px',
+          cursor: 'pointer', color: 'var(--text)', fontFamily: 'var(--font)', fontSize: 12,
+        }}
+      >
+        <span style={{
+          width: 26, height: 26, borderRadius: '50%', background: '#3b9eff22',
+          border: '1.5px solid #3b9eff66', display: 'flex', alignItems: 'center',
+          justifyContent: 'center', color: '#3b9eff', fontWeight: 600, fontSize: 11, flexShrink: 0,
+        }}>{user.initials}</span>
+        <span style={{ maxWidth: 90, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.name}</span>
+        <span style={{ color: 'var(--muted)', fontSize: 10 }}>▾</span>
+      </button>
+      {open && (
+        <>
+          <div style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={() => setOpen(false)} />
+          <div style={{
+            position: 'absolute', top: 'calc(100% + 6px)', right: 0, zIndex: 100,
+            background: '#111820', border: '1px solid #1e2d3d', borderRadius: 8,
+            minWidth: 170, boxShadow: '0 8px 32px #0008', padding: '6px 0',
+          }}>
+            <div style={{ padding: '8px 14px 10px', borderBottom: '1px solid #1e2d3d' }}>
+              <div style={{ color: 'var(--text)', fontSize: 12, fontWeight: 600 }}>{user.name}</div>
+              <div style={{ color: 'var(--muted)', fontSize: 11, marginTop: 2 }}>{user.email}</div>
+            </div>
+            <button
+              onClick={handleLogout}
+              style={{
+                width: '100%', textAlign: 'left', padding: '8px 14px', background: 'none',
+                border: 'none', color: 'var(--bear)', fontFamily: 'var(--font)', fontSize: 12,
+                cursor: 'pointer', letterSpacing: 0.5,
+              }}
+              onMouseEnter={e => (e.currentTarget.style.background = '#ff4d4f12')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+            >
+              ⏻ Logout
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
 }
 
 export default function Terminal() {
@@ -351,6 +407,7 @@ export default function Terminal() {
           </span>
         </div>
         <Clock />
+        <UserBadge />
       </div>
 
       {/* Main */}
